@@ -193,6 +193,20 @@ function buildStdItemCommand(item, parentCommand) {
             if (!artistIdRemoved && undefined!=item.artist_id && getIndex(command.params, "artist_id:")<0) {
                 command.params.push("artist_id:"+item.artist_id);
             }
+            for (var i=0, len=parentCommand.params.length; i<len; ++i) {
+                if (typeof parentCommand.params[i] === 'string' || parentCommand.params[i] instanceof String) {
+                    var lower = parentCommand.params[i].toLowerCase();
+                    if (lower.startsWith("role_id:")) {
+                        if (LMS_NO_ROLE_FILTER) {
+                            command.params.push('material_skin_'+parentCommand.params[i]);
+                        } else {
+                            command.params.push(parentCommand.params[i]);
+                        }
+                    } else if ((!LMS_NO_GENRE_FILTER && lower.startsWith("genre_id:")) || lower.startsWith("year:")) {
+                        command.params.push(parentCommand.params[i]);
+                    }
+                }
+            }
         } else if (item.id.startsWith("genre_id:")) {
             for (var i=0, len=parentCommand.params.length; i<len; ++i) {
                 if (typeof parentCommand.params[i] === 'string' || parentCommand.params[i] instanceof String) {
