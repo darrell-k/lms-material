@@ -19,8 +19,12 @@ function show_artist(event, id, title, page) {
     browseItem(event, ["albums"], ["artist_id:"+id, ARTIST_ALBUM_TAGS, SORT_KEY+ARTIST_ALBUM_SORT_PLACEHOLDER], unescape(title), page);
 }
 
-function showAlbum(event, album, title, page, subtitle) {
-    browseItem(event, ["tracks"], ["album_id:"+album, trackTags(true), SORT_KEY+"tracknum"], unescape(title), page, undefined==subtitle ? subtitle : unescape(subtitle));
+function showAlbum(event, album, title, page, subtitle, id, service, image) {
+    if (id && id<0 && service) {
+        browseItem(event, ["tracks"], ["remote_album_id:"+album, trackTags(true), SORT_KEY+"tracknum", "service:"+service, "image:"+image], unescape(title), page, undefined==subtitle ? subtitle : unescape(subtitle));
+    } else {
+        browseItem(event, ["tracks"], ["album_id:"+album, trackTags(true), SORT_KEY+"tracknum"], unescape(title), page, undefined==subtitle ? subtitle : unescape(subtitle));
+    }
 }
 
 function showWork(event, workid, work, performance, composer, page) {
@@ -209,7 +213,8 @@ function buildAlbumLine(i, page, plain) {
         }
         if (i.album_id && (!IS_MOBILE || lmsOptions.touchLinks) && !plain) {
             let artist = i.albumartist ? i.albumartist : i.artist;
-            album="<obj class=\"link-item\" onclick=\"showAlbum(event, "+i.album_id+",\'"+escape(album)+"\',\'"+page+"\',\'"+escape(artist)+"\')\">" + album + "</obj>";
+            let service = i.url.split(':')[0];
+            album="<obj class=\"link-item\" onclick=\"showAlbum(event, \'"+i.album_id+"\',\'"+escape(album)+"\',\'"+page+"\',\'"+escape(artist)+"\',\'"+i.id+"\',\'"+service+"\',\'"+i.artwork_url+"\')\">" + album + "</obj>";
         }
         line=addPart(line, album);
     } else if (remoteTitle && remoteTitle!=i.title) {

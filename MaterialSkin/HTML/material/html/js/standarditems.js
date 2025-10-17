@@ -142,6 +142,9 @@ function buildStdItemCommand(item, parentCommand) {
     }
 
     let stdItem = undefined == item.stdItem ? item.altStdItem : item.stdItem;
+    if (stdItem==STD_ITEM_ONLINE_ALBUM && item.metadata && item.metadata.remoteAlbumId) {
+        stdItem = STD_ITEM_ALBUM;
+    }
     if (undefined==stdItem) {
         if (item.command && item.command.length>0) {
             for (var i=0, list=item.command, len=list.length; i<len; ++i) {
@@ -239,6 +242,9 @@ function buildStdItemCommand(item, parentCommand) {
                 command.params.push("album_id:"+item.album_id);
             }
             addParentParams(parentCommand, command, "tracks"==command[0]);
+        } else if (stdItem==STD_ITEM_ALBUM && item.metadata && item.metadata.remoteAlbumId) {
+            command.params.push("remote_album_id:"+item.metadata.remoteAlbumId);
+            command.params.push("service:"+item.id.split(".")[0]);
         }
     }
     return command;

@@ -822,7 +822,7 @@ function nowplayingFetchArtistInfo(view) {
             view.info.tabs[ARTIST_TAB].count = ids.length;
             view.info.tabs[ARTIST_TAB].details = [];
             for (let i=0, len=ids.length; i<len; ++i) {
-                lmsCommand("", ["musicartistinfo", "biography", "artist_id:"+ids[i], "html:1"], view.info.tabs[ARTIST_TAB].reqId).then(({data}) => {
+                lmsCommand("", ["musicartistinfo", "biography", "artist_id:"+ids[i], "artist:"+artists[i], "html:1"], view.info.tabs[ARTIST_TAB].reqId).then(({data}) => {
                     logJsonMessage("RESP", data);
                     if (data && view.isCurrent(data, ARTIST_TAB)) {
                         if (data.result && data.result.biography) {
@@ -861,7 +861,7 @@ function nowplayingFetchArtistInfo(view) {
             }
         } else if (undefined!=artist_id || undefined!=artist) {
             let command = ["musicartistinfo", "biography", "html:1"];
-            if (undefined!=artist_id) {
+            if (undefined!=artist_id && artist_id>0) {
                 command.push("artist_id:"+artist_id);
             } else {
                 command.push("artist:"+revertHtmlBrackets(artist));
@@ -878,7 +878,7 @@ function nowplayingFetchArtistInfo(view) {
                             view.info.tabs[ARTIST_TAB].artist!=view.info.tabs[ARTIST_TAB].albumartist &&
                             view.info.tabs[ARTIST_TAB].artist.indexOf(view.info.tabs[ARTIST_TAB].albumartist)>=0) {
                             let command = ["musicartistinfo", "biography", "html:1"];
-                            if (view.infoTrack.albumartist_ids!=undefined) {
+                            if (view.infoTrack.albumartist_ids!=undefined && view.infoTrack.albumartist_ids[0]>0) {
                                 command.push("artist_id:"+view.infoTrack.albumartist_ids[0]);
                             } else if (view.infoTrack.albumartist!=undefined) {
                                 command.push("artist:"+revertHtmlBrackets(view.infoTrack.albumartist));
@@ -975,7 +975,7 @@ function nowplayingFetchAlbumInfo(view) {
             view.info.tabs[ALBUM_TAB].reqId = 0;
         }
         let command = ["musicartistinfo", "albumreview", "html:1"];
-        if (view.infoTrack.album_id!=undefined) {
+        if (view.infoTrack.album_id!=undefined && view.infoTrack.track_id>0) {
             command.push("album_id:"+view.infoTrack.album_id);
         } else {
             if (view.infoTrack.album!=undefined) {

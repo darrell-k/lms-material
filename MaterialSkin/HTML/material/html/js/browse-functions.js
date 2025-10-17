@@ -157,7 +157,7 @@ function browseActions(view, item, args, count, showWorks, addRoleAndServices, i
                               weight:100});
             } else if (undefined!=args['artist_id'] || undefined!=args['artist']) {
                 actions.push({title:i18n('Information'), svg:'artist', stdItem:STD_ITEM_MAI,
-                              do:{ command: undefined!=args['artist_id']
+                              do:{ command: undefined!=args['artist_id'] && args['artist_id']>0
                                                 ? ['musicartistinfo', 'biography', 'html:1', 'artist_id:'+args['artist_id']]
                                                 : ['musicartistinfo', 'biography', 'html:1', 'artist:'+args['artist']],
                                    params:[]},
@@ -358,7 +358,9 @@ function browseHandleListResponse(view, item, command, resp, prevPage, appendIte
         view.searchActive = item.id.startsWith(SEARCH_ID) ? 1 : 0;
         view.command = command;
         view.currentBaseActions = view.baseActions;
-        view.currentItemImage = resp.image;
+        let elm = command.params.filter(val => val.startsWith('image:'));
+        let img = elm.length>0 ? elm[0].split(':')[1] : undefined;
+        view.currentItemImage = resp.image ? resp.image : img;
         let wasSearch = (item.type=="search" || item.type=="entry") && undefined!=view.enteredTerm;
         // If this is an (e.g.) Spotty search then parent list (with search entry) will need refreshing
         if (wasSearch && command.command.length>1 && "items"==command.command[1]) {
@@ -2716,7 +2718,7 @@ function browseBuildFullCommand(view, item, act) {
     if (command.command.length<1) { // Non slim-browse command
         if (item.stdItem==STD_ITEM_RANDOM_MIX) { // Should no longer actually occur...
             command.command = ["material-skin-client", "rndmix", "name:"+item.title, "act:"+(INSERT_ACTION==act ? "insert" : ACTIONS[act].cmd)];
-        } else if (item.url && (!item.id || (!item.id.startsWith("playlist_id:") && !item.id.startsWith("track_id")))) {
+        } else if (item.url && (!item.id || (!item.id.startsWith("playlist_id:") && (!item.id.startsWith("track_id") || item.id.split(':')[1]<0)))) {
             command.command = ["playlist", INSERT_ACTION==act ? "insert" : ACTIONS[act].cmd, item.url, item.title];
         } else if (item.app && item.id) {
             command.command = [item.app, "playlist", INSERT_ACTION==act ? "insert" :ACTIONS[act].cmd, originalId(item.id)];
