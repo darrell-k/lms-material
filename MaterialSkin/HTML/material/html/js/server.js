@@ -215,7 +215,7 @@ async function lmsListFragment(playerid, command, params, start, fagmentSize, ba
 }
 
 async function lmsList(playerid, command, params, start, batchSize, cancache, commandId) {
-    var count = undefined===batchSize ? LMS_BATCH_SIZE : Math.max(batchSize, 50);
+    var count = undefined===batchSize ? LMS_BATCH_SIZE : 1==batchSize ? 1 : Math.max(batchSize, 50);
 
     if (command.length>1 && command[0]=="custombrowse" && (command[1]=="browsejive" || command[1]=="browse") && count>999) {
         return lmsListFragment(playerid, command, params, 0, 999, count, commandId);
@@ -241,7 +241,7 @@ async function lmsList(playerid, command, params, start, batchSize, cancache, co
         });
     } else {
         if (lmsOptions.playlistImages && cmdParams.length>1 && cmdParams[0]=="playlists" && cmdParams[1]!="tracks") {
-            cmdParams.unshift("material-skin");
+            cmdParams.unshift("material-skin-query");
         }
         return lmsCommand(playerid, cmdParams, commandId);
     }

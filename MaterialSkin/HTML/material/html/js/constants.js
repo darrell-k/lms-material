@@ -58,7 +58,7 @@ const LMS_MATERIAL_DEFAULT_ITEMS_PREF = "plugin.material-skin:items";
 const LMS_MATERIAL_DEFAULT_PINNED_PREF = "plugin.material-skin:pinned";
 const LMS_VOLUME_CLOSE_TIMEOUT = 10000;
 const LMS_QUEUE_CLOSE_TIMEOUT = 15*1000;
-const LMS_CACHE_VERSION = 582;
+const LMS_CACHE_VERSION = 601;
 const LMS_LIST_ELEMENT_SIZE = 48;
 const LMS_LIST_3LINE_ELEMENT_SIZE = 70;
 const LMS_ALBUM_QUEUE_HEADER = 68;
@@ -113,6 +113,7 @@ const GRID_MIN_HEIGHT_NARROW_ICON_ONLY = 141;
 const GRID_STEP = 5;
 
 const GRID_OTHER = {command:['other']};
+const GRID_TOP = {command:['top']};
 
 const LMS_TRACK_SORTS = new Set(["title", "tracknum", "albumtrack"]);
 const DONT_GROUP_RELEASE_TYPES = "material-skin-dgrt:1"
@@ -135,6 +136,7 @@ const TOP_RADIO_ID = TOP_ID_PREFIX+"ra";
 const TOP_REMOTE_ID = TOP_ID_PREFIX+"rml";
 const TOP_CDPLAYER_ID = TOP_ID_PREFIX+"cdda";
 const HIDE_TOP_FOR_PARTY = new Set([TOP_EXTRAS_ID, TOP_RADIO_ID, TOP_REMOTE_ID, TOP_FAVORITES_ID]);
+const TOP_DETAILED_EXTRA = TOP_ID_PREFIX+"dth";
 const MUSIC_ID_PREFIX = "mm:/";
 const COMPILATIONS_ID = MUSIC_ID_PREFIX+"myMusicAlbumsVariousArtists";
 const SEARCH_ID = MUSIC_ID_PREFIX+"lms-local-search";
@@ -206,6 +208,7 @@ const SKIN_BOOL_OPTS = ['maiComposer', 'showConductor', 'showBand', 'showArtistW
 const SKIN_INT_OPTS = ['showComposer', 'respectFixedVol', 'commentAsDiscTitle', 'pagedBatchSize', 'screensaverTimeout', 'npSwitchTimeout', 'useDefaultForSettings'];
 
 const MSK_REV_SORT_OPT = "msk-revsort:1";
+const MSK_ALLOW_ALBUM_SORTS_MENU = "msk-aasm:1";
 
 const MIN_TIME_BETWEEN_VOL_UPDATES = 150;
 
@@ -253,3 +256,11 @@ const MIN_DEF_SETTINGS_WIDTH = 800;
 const GRID_STANDARD = 0;
 const GRID_TEXT_ONLY = 1;
 const GRID_ICON_ONLY_ONLY = 2;
+
+const DETAILED_HOME_NEW = 1;
+const DETAILED_HOME_MOST = 2;
+const DETAILED_HOME_RECENT = 4;
+const DETAILED_HOME_RANDOM = 8;
+const DETAILED_HOME_RADIOS = 16;
+const DETAILED_HOME_PLAYLISTS = 32;
+const DETAILED_HOME_UPDATED = 64;

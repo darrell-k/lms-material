@@ -199,17 +199,21 @@ Vue.component('lms-ui-settings', {
     <v-list-tile>
      <v-list-tile-content class="switch-label">
       <v-list-tile-title>{{i18n('Home screen items')}}</v-list-tile-title>
-      <v-list-tile-sub-title>{{i18n('Check the standard items which you wish to appear on the home screen.')}}</v-list-tile-sub-title>
+      <v-list-tile-sub-title>{{i18n("Check the standard items which you wish to appear on the home screen.")}} {{i18n("The order of 'Scrollable list' items can be changed, here, by drag and drop.")}}</v-list-tile-sub-title>
      <v-list-tile-content/>
     </v-list-tile>
-   
+
+    <div class="settings-list-checkboxes-title">{{i18n('Scrollable lists')}}</div>
+    <template v-for="(item, index) in detailedHomeItems">
+     <v-checkbox v-model="item.checked" :label="item.title" style="display:flex" class="settings-list-checkbox" @dragstart.native="dragStart(index, $event)" @dragenter.prevent="" @dragend.native="dragEnd()" @dragover.native="dragOver(index, $event)" @drop.native="drop(index, $event)" draggable v-bind:class="{'highlight-drop':dropIndex==index, 'highlight-drag':dragIndex==index}"></v-checkbox>
+    </template>
+    <div class="settings-list-checkboxes-title">{{i18n('Categories')}}</div>
     <template v-for="(item, index) in showItems">
      <div style="display:flex" v-if="item.id!=TOP_RADIO_ID || !lmsOptions.combineAppsAndRadio">
       <v-checkbox v-model="item.show" :label="item.name" class="settings-list-checkbox"></v-checkbox>
       <v-btn v-if="item.id==TOP_MYMUSIC_ID" @click.stop="showBrowseModesDialog($event)" flat icon class="settings-list-checkbox-action"><v-icon>settings</v-icon></v-btn>
      </div>
     </template>
-    <div class="dialog-padding"></div>
 
     <div class="dialog-padding"></div>
     <v-header class="dialog-section-header">{{i18n('Now Playing')}}</v-header>
@@ -328,7 +332,7 @@ Vue.component('lms-ui-settings', {
     <v-list-tile>
      <v-list-tile-content @click="queueBackdrop = !queueBackdrop" class="switch-label">
       <v-list-tile-title>{{i18n('Draw background')}}</v-list-tile-title>
-      <v-list-tile-sub-title>{{i18n('Use cover of current track as background.')}}</v-list-tile-sub-title>
+      <v-list-tile-sub-title>{{desktopLayout ? i18n('Use cover of current track as background (when queue is pinned).') : i18n('Use cover of current track as background.')}}</v-list-tile-sub-title>
      </v-list-tile-content>
      <v-list-tile-action><m3-switch v-model="queueBackdrop"></m3-switch></v-list-tile-action>
     </v-list-tile>
@@ -365,12 +369,12 @@ Vue.component('lms-ui-settings', {
     <div class="dialog-padding"></div>
     <v-header class="dialog-section-header">{{i18n('Screensaver')}}</v-header>
     <v-list-tile>
-     <v-list-tile-content @click="screensaver = !screensaver" class="switch-label">
-      <v-list-tile-title>{{i18n('Show clock')}}</v-list-tile-title>
-      <v-list-tile-sub-title>{{i18n('When no track is playing on current player, darken screen (and show date & time) after 1 minute of inactivity.')}}</v-list-tile-sub-title>
-     </v-list-tile-content>
-     <v-list-tile-action><m3-switch v-model="screensaver"></m3-switch></v-list-tile-action>
+     <v-select :items="screensavers" :label="i18n('Type')" v-model="screensaver" item-text="label" item-value="key"></v-select>
     </v-list-tile>
+    <v-list-tile-sub-title v-if="screensaver==0" style="padding-bottom:16px">{{i18n('No screensaver.')}}</v-list-tile-sub-title>
+    <v-list-tile-sub-title v-else-if="screensaver==1" style="padding-bottom:16px">{{i18n('When no track is playing on current player, darken screen (and show date & time) after a period of inactivity. Clock is moved every few minutes.')}}</v-list-tile-sub-title>
+    <v-list-tile-sub-title v-else-if="screensaver==2" style="padding-bottom:16px">{{i18n('When no track is playing on current player, darken screen (and show date & time) after a period  of inactivity. Clock is fixed to center of screen.')}}</v-list-tile-sub-title>
+    <v-list-tile-sub-title v-else-if="screensaver==3" style="padding-bottom:16px">{{i18n('When no track is playing on current player, darken screen after a period of inactivity.')}}</v-list-tile-sub-title>
     <v-divider></v-divider>
     <v-list-tile>
      <v-list-tile-content @click="screensaverNp = !screensaverNp" class="switch-label">
@@ -495,7 +499,8 @@ Vue.component('lms-ui-settings', {
                 modes: [],
                 halfLen: 0
             },
-            screensaver: false,
+            screensaver: 0,
+            screensavers:[],
             screensaverNp: false,
             serverName: "",
             showRating: false,
@@ -510,7 +515,11 @@ Vue.component('lms-ui-settings', {
             ndShortcuts: 0,
             ndShortcutValues: [],
             ndSettingsIcons: false,
-            ndSettingsVisible: false
+            ndSettingsVisible: false,
+            detailedHomeItems:[
+            ],
+            dragIndex: undefined,
+            dropIndex: undefined
         }
     },
     computed: {
@@ -531,6 +540,9 @@ Vue.component('lms-ui-settings', {
         },
         allowTint() {
             return 'lyrion'!=this.color || !this.colorToolbars || this.colorUsage!=COLOR_USE_STANDARD
+        },
+        desktopLayout() {
+            return this.$store.state.desktopLayout
         }
     },
     mounted() {
@@ -695,6 +707,12 @@ Vue.component('lms-ui-settings', {
                             {id: TOP_FAVORITES_ID, name:i18n("Favorites"), show:!this.hidden.has(TOP_FAVORITES_ID)},
                             {id: TOP_APPS_ID, name:i18n("Apps"), show:!this.hidden.has(TOP_APPS_ID)},
                             {id: TOP_EXTRAS_ID, name:i18n("Extras"), show:!this.hidden.has(TOP_EXTRAS_ID)}];
+            for (let s=0, loop=this.detailedHomeItems, len=loop.length; s<len; ++s) {
+                let idx = this.$store.state.detailedHomeOrder.indexOf(loop[s].id);
+                loop[s].val = undefined==idx || idx<0 ? loop[s].val*100 : idx;
+                loop[s].checked = this.$store.state.detailedHome & loop[s].id;
+            }
+            this.detailedHomeItems.sort((a, b) => { return a.val<b.val ? -1 : 1});
         },
         initItems() {
             this.themes=[
@@ -734,6 +752,36 @@ Vue.component('lms-ui-settings', {
                 { key:1, label:i18n("Show all")},
                 { key:2, label:i18n("Single line only")},
                 ];
+            this.screensavers=[
+                { key:0, label:i18n("Disabled")},
+                { key:1, label:i18n("Moving clock")},
+                { key:2, label:i18n("Fixed clock")},
+                { key:3, label:i18n("Blank screen")}
+            ]
+
+            this.detailedHomeItems = [{id:DETAILED_HOME_NEW, title:i18n('New Music'), checked:DETAILED_HOME_NEW&&this.$store.state.detailedHome}];
+            if (LMS_VERSION>=90100 && LMS_STATS_ENABLED) {
+                this.detailedHomeItems.push(
+                    { id:DETAILED_HOME_RECENT, title:i18n('Recently Played'), checked:DETAILED_HOME_RECENT&&this.$store.state.detailedHome}
+                );
+                this.detailedHomeItems.push(
+                    { id:DETAILED_HOME_MOST, title:i18n('Most Played'), checked:DETAILED_HOME_MOST&&this.$store.state.detailedHome}
+                );
+            }
+            this.detailedHomeItems.push(
+                { id:DETAILED_HOME_RANDOM, title:lmsOptions.supportReleaseTypes ? i18n("Random Releases") : i18n("Random Albums"), checked:DETAILED_HOME_RANDOM&&this.$store.state.detailedHome}
+            );
+            this.detailedHomeItems.push(
+                { id:DETAILED_HOME_RADIOS, title:i18n('Radios'), checked:DETAILED_HOME_RADIOS&&this.$store.state.detailedHome}
+            );
+            this.detailedHomeItems.push(
+                { id:DETAILED_HOME_PLAYLISTS, title:i18n('Playlists'), checked:DETAILED_HOME_PLAYLISTS&&this.$store.state.detailedHome}
+            );
+            if (LMS_VERSION>=90000) {
+                this.detailedHomeItems.push(
+                    {id:DETAILED_HOME_UPDATED, title:lmsOptions.supportReleaseTypes ? i18n("Recently Updated Releases") : i18n("Recently Updated Albums"), checked:DETAILED_HOME_UPDATED&&this.$store.state.detailedHome}
+                );
+            }
         },
         close() {
             this.show=false;
@@ -765,6 +813,14 @@ Vue.component('lms-ui-settings', {
             }
         },
         settings(arrays, withSorts) {
+            let detailedHome = 0;
+            let detailedHomeOrder = [];
+            for (let i=0, loop=this.detailedHomeItems, len=loop.length; i<len; ++i) {
+                detailedHomeOrder.push(loop[i].id);
+                if (loop[i].checked) {
+                    detailedHome+=loop[i].id;
+                }
+            }
             let settings = {
                       theme:this.theme+(this.colorToolbars ? '-colored' : ''),
                       color:this.color,
@@ -808,7 +864,9 @@ Vue.component('lms-ui-settings', {
                       autoCloseQueue:this.autoCloseQueue,
                       ndShortcuts:this.ndShortcuts,
                       ndSettingsIcons:this.ndSettingsIcons,
-                      ndSettingsVisible:this.ndSettingsVisible
+                      ndSettingsVisible:this.ndSettingsVisible,
+                      detailedHome:detailedHome,
+                      detailedHomeOrder:detailedHomeOrder
                   };
             if (withSorts) {
                 for (var key in window.localStorage) {
@@ -980,6 +1038,30 @@ Vue.component('lms-ui-settings', {
         },
         mouseDown(ev) {
             toolbarMouseDown(ev);
+        },
+        dragStart(which, ev) {
+            ev.dataTransfer.dropEffect = 'move';
+            ev.dataTransfer.setData('text/plain', "dth:"+which);
+            this.dragIndex = which;
+            this.dropIndex = undefined;
+        },
+        dragEnd() {
+            this.dragIndex = undefined;
+            this.dropIndex = undefined;
+        },
+        dragOver(index, ev) {
+            if (index!=this.dragIndex) {
+                this.dropIndex = index;
+            }
+            ev.preventDefault(); // Otherwise drop is never called!
+        },
+        drop(to, ev) {
+            ev.preventDefault();
+            if (to!=this.dragIndex) {
+                this.detailedHomeItems = arrayMove(this.detailedHomeItems, this.dragIndex, to);
+            }
+            this.dragIndex = undefined;
+            this.dropIndex = undefined;
         }
     },
     watch: {

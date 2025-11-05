@@ -171,12 +171,12 @@ function isInFavorites(item) {
     return lmsFavorites.has(item.presetParams && item.presetParams.favorites_url ? item.presetParams.favorites_url : item.favUrl);
 }
 
-function uniqueId(id, listSize) {
-    return id+"@index-"+listSize;
+function uniqueId(id, val) {
+    return id+"@idx"+val;
 }
 
 function originalId(id) {
-    return id.split("@index-")[0];
+    return id.split("@idx")[0];
 }
 
 function showMenu(obj, newMenu) {
@@ -291,13 +291,6 @@ function addAndPlayAllActions(cmd, items) {
     }
 
     return true;
-}
-
-function isAudioTrack(item) {
-    return (undefined!=item.stdItem && (STD_ITEM_TRACK==item.stdItem || STD_ITEM_ALBUM_TRACK==item.stdItem || STD_ITEM_PLAYLIST_TRACK==item.stdItem || STD_ITEM_REMOTE_PLAYLIST_TRACK==item.stdItem || STD_ITEM_RANDOM_MIX==item.stdItem)) ||
-           "audio"==item.type || "track"==item.type ||
-                ( ("itemplay"==item.style || "item_play"==item.style) && item.menu && item.menu.length>0) || // itemplay for dynamic playlists
-                (item.goAction && (item.goAction == "playControl" || item.goAction == "play"));
 }
 
 function decodeShortcutEvent(e) {
@@ -502,18 +495,11 @@ function commandAlbumSortKey(command, genre) {
     return baseSort;
 }
 
-const VALID_ALBUM_SORTS = new Set(["album", "artistalbum", "artflow", "yearalbum", "yearartistalbum"]);
-const VALID_TRACK_SORTS = new Set(["title", "tracknum", "albumtrack", "yearalbumtrack", "artisttitle", "yeartitle"]);
-
 function getAlbumSort(command, genre) {
     let key = commandAlbumSortKey(command, genre);
     let def = ALBUM_SORT_KEY==key || (ALBUM_SORT_KEY+"C")==key ? "album" : "yearalbum";
     let parts = getLocalStorageVal(key, def).split(".");
-    let val = {by:parts[0], rev:parts.length>1};
-    if (!VALID_ALBUM_SORTS.has(val.by)) {
-        val.by = def;
-    }
-    return val;
+    return {by:parts[0], rev:parts.length>1};
 }
 
 function setAlbumSort(command, genre, sort, reverse) {
@@ -524,11 +510,7 @@ function getTrackSort(stdItem) {
     let key = stdItem==STD_ITEM_COMPOSITION_TRACKS ? "compositionTrackSort" : stdItem==STD_ITEM_WORK ? "workTrackSort" : "trackSort";
     let def = "yearalbumtrack";
     let parts = getLocalStorageVal(key, def).split(".");
-    let val = {by:parts[0], rev:parts.length>1};
-    if (!VALID_TRACK_SORTS.has(val.by)) {
-        val.by = def;
-    }
-    return val;
+    return {by:parts[0], rev:parts.length>1};
 }
 
 function setTrackSort(sort, reverse, stdItem) {
@@ -872,22 +854,6 @@ function refreshViewItems(view) {
     }
 }
 
-function arraysEqual(a, b) {
-    if (a === b) {
-        return true;
-    }
-    if (a == null || b == null || a.length !== b.length) {
-        return false;
-    }
-
-    for (let i = 0, len=a.lngth; i < len; ++i) {
-        if (a[i] !== b[i]) {
-            return false;
-        }
-    }
-    return true;
-}
-
 function localPath(url) {
     if (undefined!=url && /^file:\/\//.test(url)) {
         try {
@@ -943,4 +909,42 @@ function logNoPlayerError(obj) {
     if (!obj.$store.state.player) {
         bus.$emit('showError', undefined, i18n('No Player'));
     }
+}
+
+const TEXT_COLORS = [
+    "#c62828", "#d84141",
+    "#c2185b", "#fa5788",
+    "#9c27b0", "#d05ce3",
+    "#512da8", "#8559da",
+    "#303f9f", "#666ad1",
+    "#1976d2", "#82b1ff",
+    "#039be5", "#63ccff",
+    "#0097a7", "#56c8d8",
+    "#00796b", "#48a999",
+    "#43a047", "#76d275",
+    "#7cb342", "#8ec157",
+    "#afb42b", "#c8cd32",
+    "#e6b800", "#fbc02d",
+    "#ff8f00", "#ffb24d",
+    "#ef6c00", "#ff9d3f",
+    "#f4511e", "#ff844c",
+    "#8d6e63", "#be9c91",
+    "#455a64", "#718792"
+];
+
+function stringToColor(str) {
+    if (isEmpty(str)) {
+        return TEXT_COLORS[0];
+    }
+
+    let hash = 0;
+    for (let i = 0, len=str.length; i < len; i++) {
+        let ch = str.charCodeAt(i);
+        if (ch!=' ') {
+            hash = ch + ((hash << 5) - hash);
+            hash = hash & hash;
+        }
+    }
+    hash = ((hash % TEXT_COLORS.length) + TEXT_COLORS.length) % TEXT_COLORS.length;
+    return TEXT_COLORS[hash];
 }

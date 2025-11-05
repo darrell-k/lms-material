@@ -376,6 +376,10 @@ function weightSort(a, b) {
     return a.weight!=b.weight ? a.weight<b.weight ? -1 : 1 : titleSort(a, b);
 }
 
+function categorySort(a, b) {
+    return a.category!=b.category ? a.category<b.category ? -1 : 1 : titleSort(a, b);
+}
+
 function itemSort(a, b) {
     var at = "group"==a.type ? 0 : "track"==a.type ? ("music_note"==a.icon ? 1 : 2) : 3;
     var bt = "group"==b.type ? 0 : "track"==b.type ? ("music_note"==b.icon ? 1 : 2) : 3;
@@ -1279,4 +1283,27 @@ function albumGroupingType(discCount, groupCount, contiguousGroups, parentIsWork
         : multiDisc
             ? MULTI_DISC_ALBUM
             : 0;
+}
+
+function arraysEqual(a, b) {
+    if (a === b) {
+        return true;
+    }
+    if (a == null || b == null || a.length !== b.length) {
+        return false;
+    }
+
+    for (let i = 0, len=a.length; i < len; ++i) {
+        if (a[i] !== b[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function isAudioTrack(item) {
+    return (undefined!=item.stdItem && (STD_ITEM_TRACK==item.stdItem || STD_ITEM_ALBUM_TRACK==item.stdItem || STD_ITEM_PLAYLIST_TRACK==item.stdItem || STD_ITEM_REMOTE_PLAYLIST_TRACK==item.stdItem || STD_ITEM_RANDOM_MIX==item.stdItem)) ||
+           "audio"==item.type || "track"==item.type ||
+                ( ("itemplay"==item.style || "item_play"==item.style) && item.menu && item.menu.length>0) || // itemplay for dynamic playlists
+                (item.goAction && (item.goAction == "playControl" || item.goAction == "play"));
 }

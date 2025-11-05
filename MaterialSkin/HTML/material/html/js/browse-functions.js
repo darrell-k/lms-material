@@ -605,13 +605,24 @@ function browseHandleListResponse(view, item, command, resp, prevPage, appendIte
             }
         }
         if (canAddAlbumSort && view.command.command.length>0 && view.command.command[0]=="albums" && view.items.length>0) {
+            var isNewSort = false; // is sort:new?
+            var mskAllowAlbumSortsMenu = false; // is this albums, artist, albums, etc, but NOT "New Music"?
+            // We want to allow sorts-menu for most places but not new, changed, and random.
             for (var i=0, len=view.command.params.length; i<len && canAddAlbumSort; ++i) {
                 if (view.command.params[i].startsWith(SORT_KEY)) {
                     var sort=view.command.params[i].split(":")[1];
-                    canAddAlbumSort=sort!="new" && sort!="changed" && sort!="random";
+                    canAddAlbumSort=sort!="changed" && sort!="random";
+                    if (sort=="new") {
+                        isNewSort = true;
+                    }
                 } else if (view.command.params[i].startsWith("search:")) {
                     canAddAlbumSort=false;
+                } else if (view.command.params[i]==MSK_ALLOW_ALBUM_SORTS_MENU) {
+                    mskAllowAlbumSortsMenu = true;
                 }
+            }
+            if (canAddAlbumSort && isNewSort && !mskAllowAlbumSortsMenu) {
+                canAddAlbumSort = false;
             }
             if (canAddAlbumSort) {
                 view.currentActions.push({action:ALBUM_SORTS_ACTION, weight:undefined==curitem.stdItem ? -1 : 10});
@@ -993,6 +1004,7 @@ function browseClick(view, item, index, event, ignoreOpenMenu) {
     }
     if (item.header && !item.slimbrowse) {
         if (item.allItems && item.allItems.length>0) { // Clicking on 'X Artists' / 'X Albums' / 'X Tracks' search header
+            /*
             view.addHistory();
             view.items = item.allItems;
             view.headerSubTitle = item.subtitle;
@@ -1002,6 +1014,9 @@ function browseClick(view, item, index, event, ignoreOpenMenu) {
                 view.tbarActions=[ADD_ALL_ACTION, PLAY_ALL_ACTION];
             }
             browseSetScroll(view);
+            */
+           // Now handled by "(More)" button...
+           return;
         } else if (view.selection.size>0) {
             view.select(item, index, event);
         } else {
@@ -1023,6 +1038,10 @@ function browseClick(view, item, index, event, ignoreOpenMenu) {
         return;
     }
     if (item.isPinned) {
+        if (item.custom) {
+            performCustomAction(item, view.$store.state.player, null);
+            return;
+        }
         if (undefined!=item.url && "extra"!=item.type) { // Radio
             browseItemMenu(view, item, index, event);
             return;
@@ -1141,7 +1160,7 @@ function browseClick(view, item, index, event, ignoreOpenMenu) {
                         browseDoClick(view, {id:"work_id:"+data.result.work_id, composer_id:data.result.composer_id, title:item.title, image:item.image, images:item.images, stdItem:STD_ITEM_WORK}, index, event);
                     } else if (isFavouritePlaylist) {
                         if (data.result.playlist_id) {
-                            browseDoClick(view, {id:"playlist_id:"+data.result.playlist_id, title:item.title, stdItem:STD_ITEM_PLAYLIST, section:item.section}, index, event);
+                            browseDoClick(view, {id:"playlist_id:"+data.result.playlist_id, title:item.title, stdItem:STD_ITEM_PLAYLIST, section:item.section, image: item.image}, index, event);
                         } else {
                             browseItemMenu(view, item, index, event);
                         }
@@ -1517,8 +1536,19 @@ function browseItemAction(view, act, origItem, index, event) {
             logAndShowError(err, i18n("Failed to move favorite!"), command);
         });
     } else if (act===ADD_RANDOM_ALBUM_ACTION) {
-        var params = [];
-        buildStdItemCommand(item, view.command).params.forEach(p => { if (!p.startsWith("sort:") && !p.startsWith("tags:")) { params.push(p); } });
+        let params = [];
+        let itm = item;
+        if (item.header) {
+            let items = [];
+            for (var i=index+1, len=view.items.length; i<len; ++i) {
+                if (view.items[i].header) {
+                    break;
+                }
+                items.push(view.items[i]);
+            }
+            itm = items[1==items.length ? 0 : Math.floor(Math.random()*items.length)];
+        }
+        buildStdItemCommand(itm, view.command).params.forEach(p => { if (!p.startsWith("sort:") && !p.startsWith("tags:")) { params.push(p); } });
         params=browseReplaceCommandTerms(view, {command:[], params:params}).params;
         params.push(SORT_KEY+"random");
         params.push(ALBUM_TAGS);
@@ -1647,7 +1677,19 @@ function browseItemAction(view, act, origItem, index, event) {
             }
         }
     } else if (act==GOTO_ARTIST_ACTION) {
-        view.fetchItems(view.replaceCommandTerms({command:["albums"], params:["artist_id:"+item.artist_id, ARTIST_ALBUM_TAGS, SORT_KEY+ARTIST_ALBUM_SORT_PLACEHOLDER]}), {cancache:false, id:"artist_id:"+item.artist_id, title:item.id.startsWith("album_id:") ? item.subtitle : item.artist, stdItem:STD_ITEM_ARTIST});
+        if (undefined!=item.artist_ids && item.artist_ids.length>1) {
+            var choices = [];
+            for (var i=0, len=item.artist_ids.length; i<len; ++i) {
+                choices.push({title:item.artists[i], id:item.artist_ids[i]});
+            }
+            choose(ACTIONS[GOTO_ARTIST_ACTION].title, choices).then(choice => {
+                if (undefined!=choice) {
+                    view.fetchItems(view.replaceCommandTerms({command:["albums"], params:["artist_id:"+choice.id, ARTIST_ALBUM_TAGS, SORT_KEY+ARTIST_ALBUM_SORT_PLACEHOLDER]}), {cancache:false, id:"artist_id:"+choice.id, title:choice.title, stdItem:STD_ITEM_ARTIST});
+                }
+            });
+        } else {
+            view.fetchItems(view.replaceCommandTerms({command:["albums"], params:["artist_id:"+item.artist_id, ARTIST_ALBUM_TAGS, SORT_KEY+ARTIST_ALBUM_SORT_PLACEHOLDER]}), {cancache:false, id:"artist_id:"+item.artist_id, title:item.id.startsWith("album_id:") ? item.subtitle : item.artist, stdItem:STD_ITEM_ARTIST});
+        }
     } else if (act==GOTO_ALBUM_ACTION) {
         view.fetchItems({command:["tracks"], params:["album_id:"+item.album_id, trackTags(true), SORT_KEY+"tracknum"]}, {cancache:false, id:"album_id:"+item.album_id, title:item.album, stdItem:STD_ITEM_ALBUM});
     } else if (ADD_TO_PLAYLIST_ACTION==act) {
@@ -1893,7 +1935,7 @@ function browseItemMenu(view, item, index, event) {
         if (undefined!=item.stdItem) {
             // Get menu items - if view is an album or track from search then we have a different menu
             let itm = STD_ITEMS[item.stdItem];
-            let menu = undefined!=itm.searchMenu && (view.current.libsearch || view.current.allItems)
+            let menu = undefined!=itm.searchMenu && view.current && (view.current.libsearch || view.current.allItems)
                     ? itm.searchMenu
                     : undefined!=itm.maxBeforeLarge && view.listSize>itm.maxBeforeLarge
                         ? itm.largeListMenu
@@ -2048,7 +2090,7 @@ function browseGoHome(view) {
     view.next = undefined;
     view.selection = new Set();
     var prev = view.history.length>0 ? view.history[0].pos : 0;
-    view.items = view.top;
+    view.items = view.$store.state.detailedHome ? view.topExtra.concat(view.top) : view .top;
     view.jumplist = [];
     view.filteredJumplist = [];
     view.history=[];
@@ -2063,13 +2105,14 @@ function browseGoHome(view) {
     view.currentItemImage=undefined;
     view.tbarActions=[];
     view.isTop = true;
-    view.grid = {allowed:true, use:view.$store.state.gridPerView ? isSetToUseGrid(GRID_OTHER) : view.grid.use, numColumns:0, ih:GRID_MIN_HEIGHT, rows:[], few:false, haveSubtitle:true, multiSize:false, type:GRID_STANDARD};
+    view.grid = {allowed:true, use:view.$store.state.detailedHome>0 || (view.$store.state.gridPerView ? isSetToUseGrid(GRID_TOP) : view.grid.use), numColumns:0, ih:GRID_MIN_HEIGHT, rows:[], few:false, haveSubtitle:true, multiSize:false, type:GRID_STANDARD};
     view.currentActions=[{action:(view.grid.use ? USE_LIST_ACTION : USE_GRID_ACTION)}];
     view.hoverBtns = !IS_MOBILE;
     view.command = undefined;
     view.subtitleClickable = false;
     view.inGenre = undefined;
     view.canDrop = true;
+    view.getHomeExtra();
     view.$nextTick(function () {
         view.setBgndCover();
         view.filterJumplist();
@@ -2586,6 +2629,9 @@ function browsePin(view, item, add, mapped) {
         if (item.id==START_RANDOM_MIX_ID) {
             lmsOptions.randomMixDialogPinned = true;
         }
+        if (view.isTop) {
+            view.items = view.$store.state.detailedHome>0 ? view.topExtra.concat(view.top) : view.top;
+        }
         view.options.pinned.add(item.id);
         browseUpdateItemPinnedState(view, item);
         view.saveTopList();
@@ -2602,6 +2648,7 @@ function browsePin(view, item, add, mapped) {
 
 function browseUnpin(view, item, index) {
     view.top.splice(index, 1);
+    view.items = view.$store.state.detailedHome>0 ? view.topExtra.concat(view.top) : view.top;
     view.options.pinned.delete(item.id);
     browseUpdateItemPinnedState(view, item);
     if (item.id.startsWith(MUSIC_ID_PREFIX)) {
@@ -2684,6 +2731,11 @@ function browseReplaceCommandTerms(view, cmd, item) {
                 if (sort.rev) {
                     cmd.params.push(MSK_REV_SORT_OPT);
                 }
+                if (sort.by=="new") {
+                    // As this is "sort:new" we need to tell list processing that even though this is "sort:new" its
+                    // not from "New Music", so allow sort menu entry.
+                    cmd.params.push(MSK_ALLOW_ALBUM_SORTS_MENU);
+                }
             } else if (cmd.params[i].startsWith(ALBUM_TAGS_PLACEHOLDER)) {
                 cmd.params[i]=cmd.params[i].replace(ALBUM_TAGS_PLACEHOLDER, (lmsOptions.showAllArtists ? ALBUM_TAGS_ALL_ARTISTS : ALBUM_TAGS)+(lmsOptions.groupByReleaseType>0 ? 'W' : ''));
                 isNonArtistAlbumList = true;
@@ -2727,7 +2779,7 @@ function browseBuildFullCommand(view, item, act) {
         } else if (item.id) {
             command.command = ["playlistcontrol", "cmd:"+(act==PLAY_ACTION ? "load" : INSERT_ACTION==act ? "insert" :ACTIONS[act].cmd)];
             if (item.id.startsWith("album_id:") || item.id.startsWith("artist_id:") || item.id.startsWith("work_id:")) {
-                var params = undefined!=item.stdItem || undefined!=item.altStdItem ? buildStdItemCommand(item, item.id==view.current.id ? view.history.length>0 ? view.history[view.history.length-1].command : undefined : view.command).params : item.params;
+                var params = undefined!=item.stdItem || undefined!=item.altStdItem ? buildStdItemCommand(item, view.current && item.id==view.current.id ? view.history.length>0 ? view.history[view.history.length-1].command : undefined : view.command).params : item.params;
                 for (var i=0, loop = params, len=loop.length; i<len; ++i) {
                     if ( (!lmsOptions.noRoleFilter && (loop[i].startsWith("role_id:"))) ||
                          (!lmsOptions.noGenreFilter && loop[i].startsWith("genre_id:")) ||

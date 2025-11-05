@@ -19,6 +19,7 @@ function setDesktopWideCoverPad(on) {
 }
 
 function updateUiSettings(state, val) {
+    var browseDisplayChanged = false;
     var queueDisplayChanged = false;
     var themeChanged = false;
     let stdItems = ['autoScrollQueue', 'browseBackdrop', 'queueBackdrop', 'nowPlayingBackdrop', 'infoBackdrop',
@@ -40,6 +41,16 @@ function updateUiSettings(state, val) {
             }
         }
     }
+    if (undefined!=val.detailedHome && state.detailedHome!=val.detailedHome) {
+        state.detailedHome = val.detailedHome;
+        setLocalStorageVal('detailedHome', state.detailedHome);
+        browseDisplayChanged = true;
+    }
+    if (undefined!=val.detailedHomeOrder && !arraysEqual(state.detailedHomeOrder, val.detailedHomeOrder)) {
+        state.detailedHomeOrder = val.detailedHomeOrder;
+        setLocalStorageVal('detailedHomeOrder', JSON.stringify(state.detailedHomeOrder));
+        browseDisplayChanged = true;
+    }
     if (!VALID_SKIP_SECONDS.has(state.skipBSeconds)) {
         state.skipBSeconds = 10;
     }
@@ -47,7 +58,6 @@ function updateUiSettings(state, val) {
         state.skipFSeconds = 30;
     }
 
-    var browseDisplayChanged = false;
     var relayoutGrid = false;
     if (undefined!=val.theme) {
         val.theme=val.theme.replace("darker", "dark");
@@ -127,8 +137,13 @@ function updateUiSettings(state, val) {
         }
     }
     var screensaverChanged = false
-    if (undefined!=val.screensaver && state.screensaver!=val.screensaver) {
-        state.screensaver = val.screensaver;
+    var screensaverVal = undefined==val.screensaver
+        ? undefined
+        : isNaN(val.screensaver)
+            ? val.screensaver ? 1 : 0
+            : parseInt(val.screensaver);
+    if (undefined!=screensaverVal && state.screensaver!=screensaverVal) {
+        state.screensaver = screensaverVal;
         setLocalStorageVal('screensaver', state.screensaver);
         screensaverChanged = true;
     }
@@ -278,7 +293,6 @@ function setQueueShown(state, val, force) {
             }
         }
         bus.$emit('showQueue', val);
-        document.documentElement.style.setProperty('--queue-visibility', val ? 'initial' : 'collapse');
         document.documentElement.style.setProperty('--queue-minwidth', val && state.pinQueue ? '275px' : '0px');
         document.documentElement.style.setProperty('--splitter-width', val && state.pinQueue ? '1px' : '0px');
         document.documentElement.style.setProperty('--splitter-hidden', val && state.pinQueue ? '0' : '100');
@@ -305,6 +319,7 @@ const store = new Vuex.Store({
         desktopLayout: false,
         mobileBar: MBAR_THIN,
         showQueue: false,
+        showQueueNp: false,
         pinQueue: false,
         players: null, // List of players
         player: null, // Current player (from list)
@@ -354,7 +369,7 @@ const store = new Vuex.Store({
         unlockAll: false,
         skipBSeconds: 10,
         skipFSeconds: 30,
-        screensaver: false,
+        screensaver: 0,
         screensaverNp: false,
         homeButton: false,
         gridPerView: true,
@@ -369,7 +384,9 @@ const store = new Vuex.Store({
         ndShortcuts: 0,
         ndSettingsIcons: false,
         ndSettingsVisible: false,
-        cMixSupported: 1==parseInt(getComputedStyle(document.documentElement).getPropertyValue('--color-mix-supported'))
+        cMixSupported: 1==parseInt(getComputedStyle(document.documentElement).getPropertyValue('--color-mix-supported')),
+        detailedHome: DETAILED_HOME_NEW+DETAILED_HOME_RADIOS,
+        detailedHomeOrder:[DETAILED_HOME_NEW, DETAILED_HOME_MOST, DETAILED_HOME_RECENT, DETAILED_HOME_RANDOM, DETAILED_HOME_RADIOS, DETAILED_HOME_PLAYLISTS]
     },
     mutations: {
         updatePlayer(state, player) {
@@ -594,17 +611,18 @@ const store = new Vuex.Store({
 
             let boolItems = ['roundCovers', 'autoScrollQueue', 'sortFavorites', 'browseBackdrop', 'queueBackdrop', 'nowPlayingBackdrop',
                              'infoBackdrop', 'useDefaultBackdrops', 'browseTechInfo', 'techInfo', 'queueShowTrackNum', 'nowPlayingTrackNum',
-                             'nowPlayingClock', 'swipeVolume', 'swipeChangeTrack', 'keyboardControl', 'screensaver', 'screensaverNp', 'homeButton',
+                             'nowPlayingClock', 'swipeVolume', 'swipeChangeTrack', 'keyboardControl', 'screensaverNp', 'homeButton',
                              'mediaControls', 'queueAlbumStyle', 'queueThreeLines', 'browseContext', 'nowPlayingContext', 'queueContext',
                              'moveDialogs', 'autoCloseQueue', 'nowPlayingFull', 'tinted', 'ndSettingsIcons', 'ndSettingsVisible', 'gridPerView'];
             for (let i=0, len=boolItems.length; i<len; ++i) {
                 let key = boolItems[i];
                 state[key] = getLocalStorageBool(key, state[key]);
             }
-            let intItems = ['skipBSeconds', 'skipFSeconds', 'mobileBar', 'maxRating', 'volumeStep', 'ndShortcuts'];
+            let intItems = ['skipBSeconds', 'skipFSeconds', 'mobileBar', 'maxRating', 'volumeStep', 'ndShortcuts', 'detailedHome', 'screensaver'];
             for (let i=0, len=intItems.length; i<len; ++i) {
                 let key = intItems[i];
-                state[key] = parseInt(getLocalStorageVal(key, state[key]));
+                let value = getLocalStorageVal(key, state[key]);
+                state[key] = isNaN(value) ? ("true"==value ? 1 : 0) : parseInt(value);
             }
             if (!VALID_SKIP_SECONDS.has(state.skipBSeconds)) {
                 state.skipBSeconds = 10;
@@ -612,6 +630,9 @@ const store = new Vuex.Store({
             if (!VALID_SKIP_SECONDS.has(state.skipFSeconds)) {
                 state.skipFSeconds = 30;
             }
+            try {
+                state.detailedHomeOrder = JSON.parse(getLocalStorageVal('detailedHomeOrder', JSON.stringify(state.detailedHomeOrder)));
+            } catch (e) { }
             setQueuePinned(state, getLocalStorageBool('pinQueue', state.pinQueue), true);
             setQueueShown(state, getLocalStorageBool('showQueue', state.showQueue), true);
 
@@ -871,6 +892,9 @@ const store = new Vuex.Store({
         setShowQueue(state, val) {
             setQueueShown(state, val);
             addBrowserHistoryItem();
+        },
+        setShowQueueNp(state, val) {
+            state.showQueueNp = val;
         },
         setPinQueue(state, val) {
             setQueuePinned(state, val);

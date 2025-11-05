@@ -60,6 +60,8 @@ my $hideForKiosk  = '';
 my @listOfRoles = ();
 
 use constant RANDOM_MIX_EXT => '.mix';
+use constant NUM_HOME_ITEMS => 10;
+use constant PLAYLIST_IMAGE_TRACKS => 20;
 
 my $LASTFM_API_KEY = '5a854b839b10f8d46e630e8287c2299b';
 my $MAX_CACHE_AGE = 90*24*60*60; # 90 days
@@ -82,7 +84,6 @@ my $DOWNLOAD_PARSER_RE = qr{material/download/.+}i;
 my $BACKDROP_URL_PARSER_RE = qr{material/backdrops/.+}i;
 my $GENRE_URL_PARSER_RE = qr{material/genres/.+}i;
 my $PLAYLIST_URL_PARSER_RE = qr{material/playlists/.+}i;
-my $PLAYLIST_IMAGE_TRACKS = 20;
 
 my $DEFAULT_COMPOSER_GENRES = string('PLUGIN_MATERIAL_SKIN_DEFAULT_COMPOSER_GENRES');
 my $DEFAULT_CONDUCTOR_GENRES = string('PLUGIN_MATERIAL_SKIN_DEFAULT_CONDUCTOR_GENRES');
@@ -99,6 +100,8 @@ my @ADV_SEARCH_OTHER = ('content_type', 'contributor_namesearch.active1', 'contr
                         'contributor_namesearch.active5', 'genre', 'genre_name' );
 
 my %IGNORE_PROTOCOLS = map { $_ => 1 } ('mms', 'file', 'tmp', 'http', 'https', 'spdr', 'icy', 'teststream', 'db', 'playlist');
+
+my %RADIO_PROTOCOLS = map { $_ => 1 } ('http', 'https', 'accur', 'cplus', 'globalplayer', 'newsuk', 'pr', 'radioparadise', 'rnp', 'sounds', 'times', 'virgin');
 
 my @BOOL_OPTS = ('allowDownload', 'playShuffle', 'touchLinks', 'showAllArtists', 'artistFirst', 'yearInSub', 'showComment', 'genreImages', 'playlistImages', 'maiComposer', 'showConductor', 'showBand', 'showArtistWorks', 'combineAppsAndRadio', 'useGrouping', 'smallIconOnlyGrid');
 
@@ -130,6 +133,37 @@ my %ROLE_ICON_MAP = (
     'moods' => 'mood',
     'themes' => 'theme'
 );
+
+# Taken from https://github.com/LMS-Community/lms-plugin-repository/blob/master/buildrepo.pl
+my $CATEGORIES_MAP = {
+    'Accuradio' => 'radio',
+    'ArchiveOrg' => 'musicservices',
+    'ARDAudiothek' => 'radio',
+    'BBCSounds' => 'radio',
+    'CBCCanadaFrancais' => 'radio',
+    'CPlus' => 'radio',
+    'FranceTV' => 'radio',
+    'GlobalPlayerUK' => 'radio',
+    'iHeartRadio' => 'radio',
+    'LCI' => 'radio',
+    'Live365' => 'radio',
+    'MixCloud' => 'musicservices',
+    'MyQobuz' => 'musicservices',
+    'Pyrrha' => 'musicservices',
+    'PlanetRadio' => 'radio',
+    'PodcastExt' => 'musicservices',
+    'RadioFavourites' => 'radio',
+    'RadioFeedsSBS' => 'radio',
+    'RadioFrance' => 'radio',
+    'RadioNet' => 'radio',
+    'RadioNowPlaying' => 'radio',
+    'SqueezeCloud' => 'musicservices',
+    'TIDAL' => 'musicservices',
+    'TimesRadio' => 'radio',
+    'VirginRadio' => 'radio',
+    'Wefunk' => 'radio',
+    'YouTube' => 'musicservices'
+};
 
 sub initPlugin {
     my $class = shift;
@@ -289,7 +323,7 @@ sub initPlugin {
         # make sure scanner does pre-cache artwork in the size the skin is using in browse modesl
         Slim::Control::Request::executeRequest(undef, [ 'artworkspec', 'add', '300x300_f', 'Material Skin (Grid)' ]);
         Slim::Control::Request::executeRequest(undef, [ 'artworkspec', 'add', '150x150_f', 'Material Skin (List)' ]);
-    	if ($serverprefs->get('precacheHiDPIArtwork')) {
+        if ($serverprefs->get('precacheHiDPIArtwork')) {
             Slim::Control::Request::executeRequest(undef, [ 'artworkspec', 'add', '600x600_f', 'Material Skin (Grid, HiDPI)' ]);
         }
 
@@ -303,7 +337,13 @@ sub initPlugin {
     if (Slim::Utils::Versions->compareVersions($::VERSION, '8.4.0') < 0) {
         Slim::Utils::Timers::setTimer(undef, Time::HiRes::time() + 15, \&_checkUpdates);
     }
+
+    #Slim::Control::Request::subscribe(\&_checkPlayQueue, [['playlist']]);
 }
+
+#sub shutdownPlugin {
+#    Slim::Control::Request::unsubscribe(\&_playQueueCleared);
+#}
 
 sub getPluginVersion {
     return $pluginVersion;
@@ -383,6 +423,7 @@ sub initCLI {
     Slim::Control::Request::addDispatch(['material-skin', '_cmd'],        [0, 0, 1, \&_cliCommand]);
     Slim::Control::Request::addDispatch(['material-skin-client', '_cmd'], [1, 0, 1, \&_cliClientCommand]);
     Slim::Control::Request::addDispatch(['material-skin-group', '_cmd'],  [1, 0, 1, \&_cliGroupCommand]);
+    Slim::Control::Request::addDispatch(['material-skin-query', '_cmd', '_index', '_quantity'], [0, 1, 1, \&_cliCommandQuery]);
 
     # Notification
     Slim::Control::Request::addDispatch(['material-skin', 'notification', '_type', '_msg'], [0, 0, 0, undef]);
@@ -481,6 +522,23 @@ sub initOthers {
         $hideForKiosk = '9, 10, 11, 12, 13, 14, 15, 16, 20, 25, 26, 27, 29, 30, 41, 42, 49, 50, 56, 57';
     }
 }
+
+#sub _checkPlayQueue {
+#    my $request = shift;
+#    if (!$prefs->get('playShuffle')) {
+#        return;
+#    }
+#    main::INFOLOG && $log->is_info && $log->info("Check queue");
+#    my $client = $request->client();
+#    if (0==Slim::Player::Playlist::count($client) && 0!=Slim::Player::Playlist::shuffle($client)) {
+#        Slim::Utils::Timers::setTimer($client, Time::HiRes::time() + 2.00, sub {
+#            if (0==Slim::Player::Playlist::count($client) && 0!=Slim::Player::Playlist::shuffle($client)) {
+#                main::INFOLOG && $log->is_info && $log->info("Set queue to not shuffled");
+#                $client->execute(['playlist', 'shuffle', 0]);
+#            }
+#        });
+#    }
+#}
 
 sub _getUrlQueryParam {
     my $uri = shift;
@@ -618,7 +676,7 @@ sub _cliCommand {
                                                   'pass-check', 'browsemodes', 'geturl', 'command', 'scantypes', 'server', 'themes',
                                                   'playersettings', 'activeplayers', 'urls', 'adv-search', 'adv-search-params', 'protocols',
                                                   'players-extra-info', 'sort-playlist', 'mixer', 'release-types', 'check-for-updates',
-                                                  'similar', 'apps', 'rndmix', 'scan-progress', 'send-notif', 'playlists']) ) {
+                                                  'similar', 'apps', 'rndmix', 'scan-progress', 'send-notif', 'home-extra']) ) {
         $request->setStatusBadParams();
         return;
     }
@@ -1738,11 +1796,13 @@ sub _cliCommand {
     }
 
     if ($cmd eq 'apps') {
+        my $combined = $prefs->get('combineAppsAndRadio');
         my $apps = Slim::Plugin::Base->nonSNApps();
         my $cnt = 0;
         my %hideApps = map { $_ => 1 } split(/,/, $prefs->get('hideApps'));
         for my $app (@$apps) {
             my $tag = $app->can('tag') && $app->tag;
+
             my $name = $app->getDisplayName;
             if ($tag && (not exists($hideApps{$app->tag})) && (not exists($hideApps{$name}))) {
                 my $uiName = Slim::Utils::Strings::getString($name);
@@ -1752,11 +1812,28 @@ sub _cliCommand {
                 $request->addResultLoop('item_loop', $cnt, 'type', 'redirect');
                 my $actions = { go => { cmd => [ $app->tag, 'items' ], params => { menu => $app->tag } } };
                 $request->addResultLoop('item_loop', $cnt, 'actions', $actions);
+                if ($combined) {
+                    my $category = $app->_pluginDataFor('category');
+                    if (!$category) {
+                        my $modeName = $app->modeName;
+                        if (_startsWith($modeName, "Plugins::")) {
+                            my @parts = split(/::/, $modeName);
+                            if (scalar(@parts)>1) {
+                                my $pluginName = $parts[1];
+                                $category = $CATEGORIES_MAP->{$pluginName};
+                            }
+                        }
+                    }
+                    if (!$category) {
+                        $category = "other";
+                    }
+                    $request->addResultLoop('item_loop', $cnt, 'mskcategory', $category);
+                }
                 $cnt++;
             }
         }
 
-        if ($prefs->get('combineAppsAndRadio')) {
+        if ($combined) {
             my $radiosReq = Slim::Control::Request::executeRequest(undef, ['radios', 0, 1000, 'menu:radio'] );
             my $addTuneIn = 0;
             foreach my $item ( @{ $radiosReq->getResult('item_loop') || [] } ) {
@@ -1764,6 +1841,7 @@ sub _cliCommand {
                     foreach my $key (keys %$item) {
                         $request->addResultLoop('item_loop', $cnt, $key, $item->{$key});
                     }
+                    $request->addResultLoop('item_loop', $cnt, 'mskcategory', 'radio');
                     $cnt++;
                 } else {
                     $addTuneIn = 1;
@@ -1774,6 +1852,7 @@ sub _cliCommand {
                 $request->addResultLoop('item_loop', $cnt, 'type', 'redirect');
                 $request->addResultLoop('item_loop', $cnt, 'text', 'TuneIn');
                 $request->addResultLoop('item_loop', $cnt, 'svg', '/material/svg/tunein');
+                $request->addResultLoop('item_loop', $cnt, 'mskcategory', 'radio');
                 my $actions = { go => { cmd => [ 'radios' ], params => { menu => 'radio' } } };
                 $request->addResultLoop('item_loop', $cnt, 'actions', $actions);
                 $cnt++;
@@ -1788,7 +1867,7 @@ sub _cliCommand {
         my $folder = Slim::Utils::Prefs::dir() . "/material-skin/random-mix";
         if ($act eq 'list') {
             my $extLen = length(RANDOM_MIX_EXT) * -1;
-            my @files = glob($folder . '/*' . RANDOM_MIX_EXT);
+            my @files = glob('"' . $folder . '/*' . RANDOM_MIX_EXT . '"');
             my $cnt = 0;
             foreach my $file(@files) {
                 main::DEBUGLOG && $log->debug("Mix file:" . $file);
@@ -1881,6 +1960,120 @@ sub _cliCommand {
         return;
     }
 
+    if ($cmd eq 'home-extra') {
+        my @sorts = ();
+
+        if ($request->getParam('new')) {
+            push(@sorts, "new");
+        }
+        if ($request->getParam('most')) {
+            push(@sorts, "playcount");
+        }
+        if ($request->getParam('recent')) {
+            push(@sorts, "recentlyplayed");
+        }
+        if ($request->getParam('random')) {
+            push(@sorts, "random");
+        }
+        if ($request->getParam('changed')) {
+            push(@sorts, "changed");
+        }
+        if (scalar(@sorts)>0) {
+            my @keys = ("album", "year", "artists", "artist_ids", "artist", "artist_id", "performance", "composer", "work_id", "artwork_track_id", "artwork_url", "artwork", "extid", "compilation", "disccount", "contiguous_groups");
+            my $total = 0;
+            foreach my $srt ( @sorts ) {
+                my @cmd = ("albums", 0, NUM_HOME_ITEMS, "tags:aajlqswyKSS24WE", "library_id:-1", "sort:${srt}");
+                my $req = Slim::Control::Request::executeRequest(undef, \@cmd);
+                my $cnt = 0;
+                my $loop_name = "material_home_${srt}_loop";
+                foreach my $item ( @{ $req->getResult('albums_loop') || [] } ) {
+                    $request->addResultLoop($loop_name, $cnt, "id", $item->{id} . "@" . "idx" . $total); # Need unique IDs in case same album in multiple loops!
+                    $request->addResultLoop($loop_name, $cnt, "ihe", 1);
+                    foreach my $key (@keys) {
+                        my $val = $item->{$key};
+                        if (!defined $val) {
+                            next;
+                        }
+                        $request->addResultLoop($loop_name, $cnt, ${key}, ${val});
+                    }
+                    $cnt+=1;
+                    $total+=1;
+                }
+                $request->addResult("${loop_name}_len", $req->getResult('count'));
+            }
+        }
+        if ($request->getParam('radios')) {
+            my @cmd = ("material-skin-query", "radios", 0, NUM_HOME_ITEMS+1);
+            my $req = Slim::Control::Request::executeRequest(undef, \@cmd);
+            my $cnt = 0;
+            foreach my $item ( @{ $req->getResult('radios_loop') || [] } ) {
+                if ($cnt<NUM_HOME_ITEMS) {
+                    foreach my $key (keys(%{$item})) {
+                        my $val = $item->{$key};
+                        $request->addResultLoop("material_home_radios_loop", $cnt, ${key}, ${val});
+                    }
+                    $request->addResultLoop("material_home_radios_loop", $cnt, "ihe", 1);
+                }
+                $cnt+=1;
+            }
+            $request->addResult("material_home_radios_loop_len", $cnt);
+        }
+        if ($request->getParam('playlists')) {
+            my @cmd = ("material-skin-query", "playlists", 0, NUM_HOME_ITEMS+1, "tags:suxE", "menu:1");
+            my $req = Slim::Control::Request::executeRequest(undef, \@cmd);
+            my $cnt = 0;
+            foreach my $item ( @{ $req->getResult('playlists_loop') || [] } ) {
+                if ($cnt<NUM_HOME_ITEMS) {
+                    foreach my $key (keys(%{$item})) {
+                        my $val = $item->{$key};
+                        $request->addResultLoop("material_home_playlists_loop", $cnt, ${key}, ${val});
+                    }
+                    $request->addResultLoop("material_home_playlists_loop", $cnt, "ihe", 1);
+                }
+                $cnt+=1;
+            }
+            $request->addResult("material_home_playlists_loop_len", $cnt);
+        }
+        $request->setStatusDone();
+        return;
+    }
+    $request->setStatusBadParams();
+}
+
+sub _isRadio {
+    my $url = shift;
+    if (defined $url) {
+        my @parts = split(/:/, $url);
+        my $protocol = shift(@parts);
+        if (exists($RADIO_PROTOCOLS{$protocol})) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+sub _cliCommandQuery {
+    my $request = shift;
+
+    # check this is the correct query.
+    #if ($request->isNotCommand([['material-skin-query']])) {
+    #    $request->setStatusBadDispatch();
+    #    return;
+    #}
+    my $cmd = $request->getParam('_cmd');
+    if ($request->paramUndefinedOrNotOneOf($cmd, ['radios', 'playlists']) ) {
+        $request->setStatusBadParams();
+        return;
+    }
+
+    # List of favourites, but streams only - no artists, albums, folders, etc.
+    if ($cmd eq 'radios') {
+        my $feed = Slim::Plugin::Favorites::OpmlFavorites->new($request->client)->xmlbrowser(0);
+        _traverseFavoritesTree($request, $feed, 0);
+        $request->setStatusDone();
+        return;
+    }
+
     # Proxy for standard playlists command that adds mtime of playlist (so know when image _might_ change)
     # and adds list of images, if no user image found
     #
@@ -1890,7 +2083,9 @@ sub _cliCommand {
     if ($cmd eq 'playlists') {
         my $folder = $request->getParam('folder_id');
         my $tags = $request->getParam('tags');
-        my @plcmd = ("playlists", 0, 25000, "tags:${tags}");
+        my $index  = $request->getParam('_index');
+        my $quantity = $request->getParam('_quantity');
+        my @plcmd = ("playlists", $index, $quantity, "tags:${tags}");
         if ($folder) {
             push(@plcmd, "folder_id:${folder}")
         }
@@ -1911,7 +2106,7 @@ sub _cliCommand {
                     next;
                 }
                 $request->addResultLoop("playlists_loop", $cnt, ${key}, ${val});
-                if ($key eq "url") {
+                if ($key eq "url" && _startsWith("${val}", "file:")) {
                     my $path = Slim::Utils::Misc::pathFromFileURL($val);
                     if (-e $path) {
                         my $mtime = (stat $path)[9];
@@ -1935,7 +2130,7 @@ sub _cliCommand {
             #        }
             #    }
             #    if (!$haveUserImage) {
-            #        my $treq = Slim::Control::Request::executeRequest(undef, ["playlists", "tracks", 0, $PLAYLIST_IMAGE_TRACKS, "tags:cK", "playlist_id:${id}"] );
+            #        my $treq = Slim::Control::Request::executeRequest(undef, ["playlists", "tracks", 0, PLAYLIST_IMAGE_TRACKS, "tags:cK", "playlist_id:${id}"] );
             #        #my @images = ();
             #        foreach my $track ( @{ $treq->getResult('playlisttracks_loop') || [] } ) {
             #            my $image = undef;
@@ -1963,10 +2158,38 @@ sub _cliCommand {
             #}
             $cnt+=1;
         }
+        $request->addResult("count", $plreq->getResult('count'));
         $request->setStatusDone();
         return;
     }
+
     $request->setStatusBadParams();
+}
+
+sub _traverseFavoritesTree {
+    my ($request, $data, $cnt) = @_;
+    $cnt //= 0;
+
+    my $quantity = $request->getParam('_quantity');
+
+    foreach my $item (@{$data->{items} || []}) {
+        if (ref($item) eq 'HASH') {
+            if (_isRadio($item->{url})) {
+                $request->addResultLoop("radios_loop", $cnt, "url", $item->{'url'});
+                $request->addResultLoop("radios_loop", $cnt, "name", $item->{'name'});
+                $request->addResultLoop("radios_loop", $cnt, "icon", $item->{'icon'});
+
+                $cnt++;
+            } elsif (ref($item->{items}) eq 'ARRAY' && scalar(@{$item->{items}}) > 0) {
+                # Dive into child items
+                $cnt = _traverseFavoritesTree->($request, $item, $cnt);
+            }
+        }
+
+        last if $cnt >= $quantity;
+    }
+
+    return $cnt;
 }
 
 sub _handleSimilarArtists {
@@ -2859,7 +3082,7 @@ sub _playlistHandler {
     if (0==_sendMaterialImage($httpClient, $response, "playlists", $fileName)) {
         foreach my $playlist ( Slim::Schema->rs('Playlist')->getPlaylists('all')->all ) {
             if ($playlist->title eq $playlistName) {
-                my $request = Slim::Control::Request::executeRequest(undef, ["playlists", "tracks", 0, $PLAYLIST_IMAGE_TRACKS, "tags:cK", "playlist_id:" . $playlist->id] );
+                my $request = Slim::Control::Request::executeRequest(undef, ["playlists", "tracks", 0, PLAYLIST_IMAGE_TRACKS, "tags:cK", "playlist_id:" . $playlist->id] );
                 foreach my $playlist ( @{ $request->getResult('playlisttracks_loop') || [] } ) {
                     my $image = undef;
                     if ($playlist->{'artwork_url'}) {

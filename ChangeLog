@@ -1,17 +1,76 @@
-dev
+6.0.1
 -----
-1. Split years into decades, if 2 or more.
-2. Allow using grid for years.
-3. Slightly blur-behind popup messages.
-4. Add 'Newest' to album sorts.
-5. Add, server-side, option to use smaller grid if icon only and narrow width.
-6. Adjust display of track numbers in browse view.
+ 1. Fix static clock screensaver.
+ 2. Fix storing of grid/list for home screen.
+ 3. Fix issue with press of back button navigating home.
+ 4. Fix persistence of "Newest" album sort.
+ 5. Fix home screen if library is empty.
+ 6. Fix error logged when only 1 grid row.
+ 7. Append "s" to decades.
+ 8. Add 'Random Albums/Releases', and 'Recently Updated Albums/Releases', to
+    scrolled lists.
+ 9. Recurse favourites folders for 'Radios' - thanks to Michael Herger.
+10. Fix list corruption when pinnng items.
+11. Enable 'Show image' hover button for home screen items.
+
+6.0.0
+-----
+ 1. Split years into decades, if 2 or more.
+ 2. Allow using grid for years.
+ 3. Slightly blur-behind popup messages.
+ 4. Add 'Newest' to album sorts.
+ 5. Add, server-side, option to use smaller grid if icon only and narrow width.
+ 6. Adjust display of track numbers in browse view.
+ 7. Allow loading of 'pinned' weblink/iframe items from custom actions.
+ 8. Add option to show horizontally scrollable list of new, recently played,
+    most played, radios, and playlists on home screen.
+ 9. Add "(More)" button on search results header, if more results than shown.
+10. Reduce grid size for home screen and for views with only icons.
+11. Separate list/grid preference for home screen.
+12. Set max width of 1000px for information in browse view.
+13. Always use frosted background for queue in desktop layout when not pinned.
+14. In desktop layout, always show queue above now-playing if now-playing is
+    expanded - regardless of whether queue is pinned or not.
+15. Add icon map for xPlay.
+16. If set to combine apps and radio then categorise apps.
+17. Allow using grid for genres even when genre images are disabled.
+18. Only show detailed sub-toolbar if window is at least 400px tall.
+19. Allow using detailed sub-toolbar for playlists, if playlist image support
+    is enabled.
+20. Add text play/add/shuffle buttons for track lists if in width range.
+21. If showing detailed sub-toolbar and view is too narrow for image then show
+    a semi-transparent (and fading) version on right.
+22. If clear queue with 'Play shuffled' enabled then reset queue to not
+    shuffled.
+23. Always use three vertical dots for menu icon.
+24. Add 'Play shuffled' to genres and years.
+25. Don't try to get mtime of playlists imported from streaming services -
+    thanks to SamY.
+26. Use a button for server update link in 'Information' dialog.
+27. Ignore headers when searching in lists.
+28. Draw border around all dialog buttons.
+29. Indicate current track in browse view.
+30. Use current accent colour for screensaver.
+31. Update screensaver options; disabled, moving clock, fixed clock, blank
+    screen.
+32. If 'Play shuffled' is enabled then give this button priority over
+    'Append'.
+33. Add 'Go to artist' to album menu if not browsed from artist.
+34. Add action to add random album from decade.
+
+5.11.4
+------
+1. Fix listing random mixes on macOS - thanks to EelcoV.
+2. Don't sort search results, use order as supplied from LMS.
+3. Fix other apps showing in 'TuneIn' when set to combine radio and apps.
 
 5.11.3
 ------
 1. Add 'Play shuffled' for remote playlists.
 2. Fix disabling of playlist images.
 3. Add emblem for 'iBroadcast'.
+4. Fix/work-around issues with using Default for server-settings when LMS is
+   on piCorePlayer.
 
 5.11.2
 ------
