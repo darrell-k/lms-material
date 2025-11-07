@@ -213,8 +213,10 @@ function buildAlbumLine(i, page, plain) {
         }
         if (i.album_id && (!IS_MOBILE || lmsOptions.touchLinks) && !plain) {
             let artist = i.albumartist ? i.albumartist : i.artist;
-            let service = i.url.split(':')[0];
-            album="<obj class=\"link-item\" onclick=\"showAlbum(event, \'"+i.album_id+"\',\'"+escape(album)+"\',\'"+page+"\',\'"+escape(artist)+"\',\'"+i.id+"\',\'"+service+"\',\'"+i.artwork_url+"\')\">" + album + "</obj>";
+            album="<obj class=\"link-item\" onclick=\"showAlbum(event, \'"+i.album_id+"\',\'"+escape(album)+"\',\'"+page+"\',\'"+escape(artist)+"\',\'"+i.id
+            + (i.service_id ? "\',\'"+i.service_id : '')
+            + (i.artwork_url ? "\',\'"+i.artwork_url : '')
+            +"\')\">" + album + "</obj>";
         }
         line=addPart(line, album);
     } else if (remoteTitle && remoteTitle!=i.title) {

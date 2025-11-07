@@ -2322,7 +2322,7 @@ sub _cliClientCommand {
     }
 
     if ($cmd eq 'command-list') {
-        my $json = $request->getParam('commands');
+        my $json = Encode::encode("UTF-8", $request->getParam('commands'));
         if ($json) {
             my $commands = eval { from_json( $json ) };
             my $actioned = 0;

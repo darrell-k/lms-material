@@ -2770,7 +2770,7 @@ function browseBuildFullCommand(view, item, act) {
     if (command.command.length<1) { // Non slim-browse command
         if (item.stdItem==STD_ITEM_RANDOM_MIX) { // Should no longer actually occur...
             command.command = ["material-skin-client", "rndmix", "name:"+item.title, "act:"+(INSERT_ACTION==act ? "insert" : ACTIONS[act].cmd)];
-        } else if (item.url && (!item.id || (!item.id.startsWith("playlist_id:") && (!item.id.startsWith("track_id") || item.id.split(':')[1]<0)))) {
+        } else if (item.url && (!item.id || (!item.id.startsWith("playlist_id:") && (!item.id.startsWith("track_id") || ( item.id.startsWith("track_id") && item.id.split(':')[1].split(',')[0]<0 ))))) {
             command.command = ["playlist", INSERT_ACTION==act ? "insert" : ACTIONS[act].cmd, item.url, item.title];
         } else if (item.app && item.id) {
             command.command = [item.app, "playlist", INSERT_ACTION==act ? "insert" :ACTIONS[act].cmd, originalId(item.id)];
@@ -2803,8 +2803,13 @@ function browseBuildFullCommand(view, item, act) {
                 if (item.stdItem==STD_ITEM_WORK_GENRE && LMS_VERSION>=90100) {
                     command.params.push("work_id:-1");
                 }
-            } else if (item.id.startsWith("track_id:") && item.work_id && LMS_VERSION>=90100) {
-                command.params.push("work_id:-1");
+            } else if (item.id.startsWith("track_id:")) {
+                if (item.work_id && LMS_VERSION>=90100) {
+                    command.params.push("work_id:-1");
+                }
+                if (item.url && LMS_VERSION>=90100) {
+                    command.params.push(item.url);
+                }
             }
 
             let id = originalId(item.id);
@@ -2842,6 +2847,7 @@ function browseDoListAction(view, list, act, index) {
     // Perform an action on a list of items. If these are tracks, then we can use 1 command...
     if (list[0].id.startsWith("track_id:")) {
         var ids="";
+        var urls="";
         // for 'insert' the list has been inverted (so that adding one by one works). But
         // as this command will send an ID list we need to revert to original order.
         if (INSERT_ACTION==act) {
@@ -2850,11 +2856,13 @@ function browseDoListAction(view, list, act, index) {
         for (var i=0, len=list.length; i<len; ++i) {
             if (ids.length<1) {
                 ids+=originalId(list[i].id);
+                urls=list[i].url;
             } else {
                 ids+=","+originalId(list[i].id).split(":")[1];
+                urls+=","+list[i].url;
             }
         }
-        var command = browseBuildFullCommand(view, {id:ids, work_id:list[0].work_id}, /*PLAY_ACTION==act && undefined!=index ? ADD_ACTION :*/ act);
+        var command = browseBuildFullCommand(view, {id:ids, work_id:list[0].work_id, url:urls}, /*PLAY_ACTION==act && undefined!=index ? ADD_ACTION :*/ act);
         if (command.command.length===0) {
             bus.$emit('showError', undefined, i18n("Don't know how to handle this!"));
             return;
