@@ -185,6 +185,7 @@ function nowplayingOnPlayerStatus(view, playerStatus) {
         view.playerStatus.current.remote_title = playerStatus.current.remote_title;
         view.playerStatus.current.discsubtitle = playerStatus.current.discsubtitle;
         view.playerStatus.current.grouping = playerStatus.current.grouping;
+        view.playerStatus.current.display_artist = playerStatus.current.display_artist;
         if (playerStatus.current.year && playerStatus.current.year>0) {
             view.playerStatus.current.album = view.playerStatus.current.albumName+" ("+ playerStatus.current.year+")";
         } else {

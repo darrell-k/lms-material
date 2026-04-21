@@ -1353,7 +1353,7 @@ function browseItemAction(view, act, origItem, index, event, slimBrowseBaseActio
             return;
         }
     }
-    let item = undefined!=origItem && origItem.id.startsWith("currentaction:") ? browseGetCurrent(view) : origItem;
+    let item = undefined!=origItem && isNaN(origItem.id) && origItem.id.startsWith("currentaction:") ? browseGetCurrent(view) : origItem;
 
     if (act==SEARCH_LIST_ACTION) {
         view.searchActive=2;

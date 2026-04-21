@@ -257,7 +257,10 @@ var lmsNowPlaying = Vue.component("lms-now-playing", {
      <div class="np-landscape-track-info hide-scrollbar fade-both">
       <div id="np-track-info">
        <p class="np-title-landscape np-title" v-if="playerStatus.current.title">{{title}}</p>
-       <p class="np-text-landscape subtext" v-if="artistAndComposerLine" v-html="artistAndComposerLine"></p>
+       <p class="np-text-landscape subtext" v-if="artistAndComposerLine" v-html="undefined==this.playerStatus.current.display_artist ? artistAndComposerLine : this.playerStatus.current.display_artist"
+       v-bind:class="undefined!=this.playerStatus.current.display_artist ? {'link-item':artistAndComposerLine} : ''"
+       @click.stop="undefined!=display_artist ? clickArtist(playerStatusCurrent, undefined, $event) : ''"
+       ></p>
        <p class="np-text-landscape subtext" v-if="albumLine" v-html="albumLine"></p>
        <v-rating v-if="showRatings" class="np-text-landscape subtext" v-model="rating.value" :halfIncrements="maxRating>5" hover clearable @click.native="setRating(true)" :readonly="undefined==LMS_P_RP"></v-rating>
       </div>
@@ -330,7 +333,10 @@ var lmsNowPlaying = Vue.component("lms-now-playing", {
     <div class="np-portrait-track-info hide-scrollbar fade-both">
      <div id="np-track-info">
       <p class="np-title" v-if="playerStatus.current.title">{{title}}</p>
-      <p class="np-text subtext" v-if="artistAndComposerLine" v-html="artistAndComposerLine"></p>
+      <p class="np-text subtext" v-if="artistAndComposerLine" v-html="undefined==this.playerStatus.current.display_artist ? artistAndComposerLine : this.playerStatus.current.display_artist"
+       v-bind:class="undefined!=this.playerStatus.current.display_artist ? {'link-item':artistAndComposerLine} : ''"
+       @click.stop="undefined!=display_artist ? clickArtist(playerStatusCurrent, undefined, $event) : ''"
+      ></p>
       <p class="np-text subtext" v-if="albumLine" v-html="albumLine"></p>
       <v-rating v-if="showRatings" class="np-text subtext" v-model="rating.value" :halfIncrements="maxRating>5" hover clearable @click.native="setRating(true)" :readonly="undefined==LMS_P_RP"></v-rating>
      </div>
@@ -406,7 +412,7 @@ var lmsNowPlaying = Vue.component("lms-now-playing", {
                     current: { canseek:1, duration:0, time:undefined, title:undefined, liveEdge:undefined, artist:undefined, artistAndComposer: undefined, artistAndComposerWithContext:undefined,
                                album:undefined, albumName:undefined, albumLine:undefined, technicalInfo:undefined, pospc:0.0, bufpc:100.0, tracknum:undefined,
                                disc:0, year:0, url:undefined, comment:undefined, source: {local:true, text:undefined},
-                               emblem: undefined, maiComposer:undefined, discsubtitle:undefined, grouping:undefined },
+                               emblem: undefined, maiComposer:undefined, discsubtitle:undefined, grouping:undefined, display_artist:undefined },
                     playlist: { shuffle:0, repeat: 0, randomplay:0, current:0, count:0 },
                  },
                  mobileBarText: undefined,
@@ -1371,7 +1377,17 @@ var lmsNowPlaying = Vue.component("lms-now-playing", {
         changePage() {
             this.$store.commit('setPage', this.nextPage);
             this.info.show = false;
-        }
+        },
+        clickArtist(item, index, event) {
+            storeClickOrTouchPos(event, this.menu);
+            if (undefined==item.artists && undefined!=item.albumartists) {
+                item.artists = item.albumartists;
+            }
+            if (undefined==item.artist_ids && undefined!=item.albumartist_ids) {
+                item.artist_ids = item.albumartist_ids;
+            }
+            browseItemAction(this, GOTO_ARTIST_ACTION, item, null, event);
+        },
     },
     filters: {
         svgIcon: function (name, dark, header) {
@@ -1590,7 +1606,13 @@ var lmsNowPlaying = Vue.component("lms-now-playing", {
             return this.info.tabs[TRACK_TAB].lines && this.info.tabs[TRACK_TAB].lines[0].time>=0 &&
                    undefined!=this.playerStatus.current && undefined!=this.playerStatus.current.time && undefined!=this.playerStatus.current.duration &&
                    this.playerStatus.current.duration<=MAX_LYRICS_DURATION
-        }
+        },
+        playerStatusCurrent() {
+            return this.playerStatus.current
+        },
+        display_artist() {
+           return this.playerStatus.current.display_artist
+        },
     },
     beforeDestroy() {
         this.stopPositionInterval();

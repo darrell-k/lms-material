@@ -305,7 +305,10 @@ var lmsBrowse = Vue.component("lms-browse", {
      <v-list-tile-content v-else>
       <v-list-tile-title v-html="item.title" v-bind:class="{'browse-no-sub':!item.subtitle}"></v-list-tile-title>
       <v-list-tile-sub-title v-if="wide>WIDE_NONE && item.subtitleContext" v-html="item.subtitleContext"></v-list-tile-sub-title>
-      <v-list-tile-sub-title v-else v-html="item.subtitleLinks ? item.subtitleLinks : item.subtitle"></v-list-tile-sub-title>
+      <v-list-tile-sub-title v-else v-html="undefined==item.display_artist && item.subtitleLinks ? item.subtitleLinks : item.subtitle "
+      	v-bind:class="undefined!=item.display_artist ? {'link-item':subtitlesClickable} : ''"
+      	@click.stop="undefined!=item.display_artist ? clickSubtitle(item, undefined, $event) : ''"
+      ></v-list-tile-sub-title>
      </v-list-tile-content>
 
      <v-list-tile-action v-if="undefined!=item.durationStr" class="browse-time">{{item.durationStr}}</v-list-tile-action>
@@ -437,7 +440,10 @@ var lmsBrowse = Vue.component("lms-browse", {
       <v-list-tile-title v-html="item.title" v-if="undefined!=item.stdItem && (item.stdItem==STD_ITEM_TRACK || item.stdItem==STD_ITEM_ALBUM_TRACK || item.stdItem==STD_ITEM_PLAYLIST_TRACK || item.stdItem==STD_ITEM_REMOTE_PLAYLIST_TRACK)" v-bind:class="{'browse-no-sub':!item.subtitle}"></v-list-tile-title>
       <v-list-tile-title v-else>{{item.title}}<b class="vlib-name" v-if="isTop && item.libname" v-bind:class="{'browse-no-sub':!item.subtitle}">{{SEPARATOR+item.libname}}</b></v-list-tile-title>
       <v-list-tile-sub-title v-if="wide>WIDE_NONE && item.subtitleContext" v-html="item.subtitleContext"></v-list-tile-sub-title>
-      <v-list-tile-sub-title v-else v-html="item.subtitleLinks ? item.subtitleLinks : item.subtitle"></v-list-tile-sub-title>
+      <v-list-tile-sub-title v-else v-html="undefined==item.display_artist && item.subtitleLinks ? item.subtitleLinks : item.subtitle "
+      	v-bind:class="undefined!=item.display_artist ? {'link-item':subtitlesClickable} : ''"
+      	@click.stop="undefined!=item.display_artist ? clickSubtitle(item, undefined, $event) : ''"
+      ></v-list-tile-sub-title>
      </v-list-tile-content>
 
      <v-list-tile-action v-if="undefined!=item.durationStr" class="browse-time">{{item.durationStr}}</v-list-tile-action>

@@ -216,7 +216,7 @@ function buildAlbumLine(i, page, plain, addSubtitle) {
             album+=" (" + i.year + ")";
         }
         if (i.album_id && (!IS_MOBILE || lmsOptions.touchLinks) && !plain) {
-            let artist = i.albumartist ? i.albumartist : i.artist;
+            let artist = i.display_artist ? i.display_artist : i.albumartist ? i.albumartist : i.artist;
             album="<obj class=\"link-item\" onclick=\"showAlbum(event, "+i.album_id+",\'"+escape(album)+"\',\'"+page+"\',\'"+escape(artist)+"\')\">" + album + "</obj>";
         }
         if (addSubtitle) {

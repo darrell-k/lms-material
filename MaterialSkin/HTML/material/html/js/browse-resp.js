@@ -1223,6 +1223,9 @@ function parseBrowseResp(data, parent, options, cacheKey) {
                 let showArtist = undefined==parent || (parent.title!=artist && parent.subtitle!=artist);
                 let performance = undefined!=i.performance && i.performance.length>0 ? i.performance : undefined;
                 let subtitle = showArtist ? artist : showYear && lmsOptions.yearInSub ? ""+i.year : undefined;
+                if (showArtist && undefined!=i.display_artist) {
+                    subtitle = i.display_artist;
+                }
                 let maintitle = showArtist || !lmsOptions.yearInSub ? title : i.album;
 
                 if (undefined!=i.work_id && undefined!=i.work_name && undefined!=i.composer) {
@@ -1244,6 +1247,7 @@ function parseBrowseResp(data, parent, options, cacheKey) {
                               artist_id: i.artist_id,
                               artist_ids: splitIntArray(i.artist_ids),
                               artists: artists,
+                              display_artist: i.display_artist,
                               work_id: i.work_id,
                               performance: performance,
                               title: maintitle,
