@@ -19,6 +19,21 @@ function show_artist(event, id, title, page) {
     browseItem(event, ["albums"], ["artist_id:"+id, ARTIST_ALBUM_TAGS, SORT_KEY+ARTIST_ALBUM_SORT_PLACEHOLDER], unescape(title), page);
 }
 
+function show_artist_list(event, artist_ids, artists, title, page) {
+    if (undefined!=artist_ids) {
+        event.stopPropagation();
+        var choices = [];
+        for (var i=0, len=artist_ids.length; i<len; ++i) {
+            choices.push({title:artists[i], id:artist_ids[i]});
+        }
+        choose(ACTIONS[GOTO_ARTIST_ACTION].title, choices).then(choice => {
+            if (undefined!=choice) {
+                show_artist(event, choice.id, choice.title, page);
+            }
+        });
+    }
+}
+
 function showAlbum(event, album, title, page, subtitle) {
     browseItem(event, ["tracks"], ["album_id:"+album, trackTags(true), SORT_KEY+"tracknum"], unescape(title), page, undefined==subtitle ? subtitle : unescape(subtitle));
 }
@@ -74,7 +89,12 @@ function buildLink(func, id, str, page, extra) {
 }
 
 function addArtistLink(item, line, type, func, page, used, plain) {
-    if (lmsOptions.showAllArtists && undefined!=item[type+"s"] && item[type+"s"].length>1) {
+    if (undefined!=item.display_artist) {
+        let val = item.display_artist;
+        let artist_ids = undefined!=item.artist_ids ? item.artist_ids : undefined!=item.albumartist_ids ? item.albumartist_ids : undefined;
+        let artists = undefined!=item.artists ? item.artists.join("','") : undefined!=item.albumartists ? item.albumartists.join("','") : undefined;
+        line=addPart(line, "<obj class=\"link-item\" onclick=\"show_artist_list(event, ["+artist_ids+"], ['"+artists+"'], \'"+escape(val)+"\', \'"+page+"\'"+")\">" + val + "</obj>");
+    } else if (lmsOptions.showAllArtists && undefined!=item[type+"s"] && item[type+"s"].length>1) {
         let canUse = new Set();
         let canUseVals = [];
         for (let i=0, loop=item[type+"s"], len=loop.length; i<len; ++i) {
@@ -100,6 +120,7 @@ function addArtistLink(item, line, type, func, page, used, plain) {
         }
     } else {
         let val = item[type];
+//        let val = item.display_artist ? item.display_artist : item[type];
         if (undefined!=val) {
             if (used.has(val)) {
                 return line;
@@ -275,7 +296,9 @@ function buildWorkLine(i, page, plain) {
 }
 
 function buildArtists(i, line, page, used, plain) {
-    if (lmsOptions.showAllArtists) {
+    if (i.display_artist) {
+        line=addArtistLink(i, line, "artist", "show_artist", page, used, plain);
+    } else if (lmsOptions.showAllArtists) {
         if (i.artist) {
             line=addArtistLink(i, line, "artist", "show_artist", page, used, plain);
             used.add(i.artist);

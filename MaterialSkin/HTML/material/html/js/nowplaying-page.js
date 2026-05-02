@@ -1380,13 +1380,20 @@ var lmsNowPlaying = Vue.component("lms-now-playing", {
         },
         clickArtist(item, index, event) {
             storeClickOrTouchPos(event, this.menu);
-            if (undefined==item.artists && undefined!=item.albumartists) {
-                item.artists = item.albumartists;
+            let artists = undefined!=item.artists ? item.artists : undefined!=item.albumartists ? item.albumartists : undefined;
+            let artist_ids = undefined!=item.artist_ids ? item.artist_ids : undefined!=item.albumartist_ids ? item.albumartist_ids : undefined;
+            if (undefined!=artist_ids) {
+                var choices = [];
+                for (var i=0, len=artist_ids.length; i<len; ++i) {
+                    choices.push({title:artists[i], id:artist_ids[i]});
+                }
+                choose(ACTIONS[GOTO_ARTIST_ACTION].title, choices).then(choice => {
+                    if (undefined!=choice) {
+                        show_artist(event, choice.id, choice.title, 'now-playing');
+                        this.close();
+                    }
+                });
             }
-            if (undefined==item.artist_ids && undefined!=item.albumartist_ids) {
-                item.artist_ids = item.albumartist_ids;
-            }
-            browseItemAction(this, GOTO_ARTIST_ACTION, item, null, event);
         },
     },
     filters: {
