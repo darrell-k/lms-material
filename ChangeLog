@@ -1,3 +1,16 @@
+6.3.3
+-----
+1. Fix blurred sub-toolbar background.
+
+6.3.2
+-----
+1. Add tooltips to shortcut icons.
+2. Fix 'NaN Apps'
+3. Fix jumplist for 'Music Folder' browsing.
+4. Add 'Work' to queue remove options.
+5. Fix detailed sub-toolbar cover when not drawing browse background.
+6. Fix add/play/etc. hover buttons in search results.
+
 6.3.1
 -----
 1. Fix play button appearing when 'Thin' is chosen as mobile now-playing bar
