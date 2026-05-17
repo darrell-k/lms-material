@@ -64,6 +64,13 @@ function setWindowArea() {
     }, 50);
 }
 
+function toggleButtonDueToKeyboard(id, keyboardShown) {
+    let elem = document.getElementById(id);
+    if (elem) {
+        elem.style.display = keyboardShown ? 'none' : 'block';
+    }
+}
+
 var app = new Vue({
     el: '#app',
     data() {
@@ -71,7 +78,7 @@ var app = new Vue({
                             manage: false, rndmix: false, favorite: false, rating: false, sleep: false,
                             iteminfo: false, iframe: false, dstm: false, savequeue: false, icon: false, prompt:false,
                             addtoplaylist: false, file: false, groupvolume: false, advancedsearch: false, downloadstatus:false,
-                            gallery: false, choice: false, playersettingsplugin: false, playerlist: false
+                            gallery: false, choice: false, playersettingsplugin: false, playerlist: false, npshare: false
                           },
                  loaded: false,
                  snackbar:{ show: false, msg: undefined},
@@ -292,14 +299,9 @@ var app = new Vue({
                             }
                         }
                         lmsApp.keyboardShown = keyboardShown;
-                        var elem = document.getElementById('nav-bar');
-                        if (elem) {
-                            elem.style.display = keyboardShown ? 'none' : 'block';
-                        }
-                        elem = document.getElementById('np-bar');
-                        if (elem) {
-                            elem.style.display = keyboardShown ? 'none' : 'block';
-                        }
+                        toggleButtonDueToKeyboard('nav-bar', keyboardShown);
+                        toggleButtonDueToKeyboard('np-bar', keyboardShown);
+                        toggleButtonDueToKeyboard('browse-search-btn', keyboardShown);
                         for (let v=0, list=lmsApp.heights, len=list.length; v<len; ++v) {
                             if (undefined!=list[v][1]) {
                                 document.documentElement.style.setProperty(list[v][0], keyboardShown ? '0px' : list[v][1]);
@@ -454,7 +456,7 @@ var app = new Vue({
         }.bind(this));
 
         bus.$on('showError', function(err, msg, timeout) {
-            this.snackbar = {msg: (msg ? stripLinkTags(msg) : i18n("Something went wrong!")) + (err ? " (" + err+")" : ""),
+            this.snackbar = {msg: (msg ? stripLinkTags(msg) : i18n("Something went wrong!")) + (err && !(""+err).indexOf("AxiosError")<0 ? " (" + err+")" : ""),
                              show: true, color: 'error', timeout: undefined!=timeout && timeout>0 && timeout<=30 ? timeout*1000 : undefined};
         }.bind(this));
         bus.$on('showMessage', function(msg, timeout) {

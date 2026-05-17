@@ -302,6 +302,7 @@ function nowplayingOnPlayerStatus(view, playerStatus) {
     }
     if (playerStatus.current.work!=view.playerStatus.current.work) {
         view.playerStatus.current.work = playerStatus.current.work;
+        //view.playerStatus.current.workWithContext = XXX('<obj>work</obj> %1', playerStatus.current.work).replaceAll("<obj>", "<obj class=\"ext-details\">");
     }
     if (playerStatus.current.work_id!=view.playerStatus.current.work_id) {
         view.playerStatus.current.work_id = playerStatus.current.work_id;
@@ -315,6 +316,7 @@ function nowplayingOnPlayerStatus(view, playerStatus) {
     if (trackChanged && view.info.sync) {
         view.setInfoTrack();
         view.showInfo();
+        bus.$emit('npTrackChanged', view.playerStatus.current);
         if (!IS_MOBILE && (queryParams.setTitle || queryParams.dontTrapBack)) {
             nowplayingSetWindowTitle(view);
         }
@@ -422,6 +424,9 @@ function nowplayingShowMenu(view, event) {
             view.menu.items.push({title:ACTIONS[act].title, act:NP_ITEM_ACT+act, svg:ACTIONS[act].svg});
         }
         if (undefined!=view.playerStatus.current.title) {
+            if (undefined!=view.coverUrl) {
+                view.menu.items.push({title:i18n('Share'), act:NP_SHARE_CMD, icon:"share"});
+            }
             view.menu.items.push({title:ACTIONS[COPY_DETAILS_ACTION].title, act:NP_COPY_DETAILS_CMD, icon:ACTIONS[COPY_DETAILS_ACTION].icon});
         }
         view.menu.items.push({title:ACTIONS[SHOW_IMAGE_ACTION].title, svg:ACTIONS[SHOW_IMAGE_ACTION].svg, act:NP_PIC_ACT});
@@ -465,6 +470,8 @@ function nowplayingMenuAction(view, item) {
         }
         bus.$emit("browse", item.cmd.command, item.cmd.params, item.cmd.title, 'now-playing', undefined, item.cmd.subtitle);
         view.close();
+    } else if (NP_SHARE_CMD==item.act) {
+        bus.$emit("dlg.open", "npshare", view.coverUrl, view.playerStatus.current);
     } else if (NP_COPY_DETAILS_CMD==item.act) {
         let text = undefined;
         if (undefined!=view.playerStatus.current.title && undefined!=view.playerStatus.current.artist && undefined!=view.playerStatus.current.album) {

@@ -231,6 +231,16 @@ function parseBrowseResp(data, parent, options, cacheKey) {
                 }
                 var addedPlayAction = false;
 
+                // Some times get item_id:<hex>,<real id> - if so, remove hex. Mainly favourites.
+                // See https://forums.lyrion.org/forum/user-forums/3rd-party-software/106269-announce-material-skin?p=1822830#post1822830
+                if (i.params && i.params.item_id) {
+                    let parts = i.params.item_id.split(".");
+                    if (isNaN(parts[0])) {
+                        parts.shift();
+                        i.params.item_id = parts.join(".");
+                    }
+                }
+ 
                 if (undefined!=i.text && undefined!=i.text.name && 'text'==i.text.type) {
                     // BBC Sounds seems to place error message in '"text":{"name":"<sting>, "type":"text"}'
                     // So, we need to check for this and use text.name as text and text.type as type.
@@ -561,6 +571,10 @@ function parseBrowseResp(data, parent, options, cacheKey) {
                 if (!i.id || isFavorites) {
                     if (i.params && i.params.track_id) {
                         i.id = uniqueId("track_id:"+i.params.track_id, resp.items.length); // Incase of duplicates?
+                    } else if (i.params && i.params.item_id) {
+                        i.id = uniqueId("item_id:"+i.params.item_id, resp.items.length); // Incase of duplicates?
+                    } else if (i.actions && i.actions.go && i.actions.go.params && i.actions.go.params.item_id) {
+                        i.id = uniqueId("item_id:"+i.actions.go.params.item_id, resp.items.length); // Incase of duplicates?
                     } else if (parent && parent.id && parent.id.startsWith(TOP_ID_PREFIX)) {
                         i.id="item_id:"+resp.items.length;
                     } else {
@@ -915,6 +929,7 @@ function parseBrowseResp(data, parent, options, cacheKey) {
                 if (resp.isMusicMix) {
                     resp.items.shift();
                     resp.subtitle=0==resp.items.length ? i18n("Empty") : i18np("1 Track", "%1 Tracks", resp.items.length-numHeaders);
+                    resp.listSize=resp.items.length;
                 } else {
                     if (resp.items.length>0 &&
                         ( ("spotty"==command) || ("trackinfo"==command && getIndex(data.params[1], "url:spotify://track:")>0))) {

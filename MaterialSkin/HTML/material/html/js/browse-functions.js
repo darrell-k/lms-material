@@ -420,7 +420,7 @@ function browseHandleListResponse(view, item, command, resp, prevPage, appendIte
         view.current = item;
         view.currentLibId = command.libraryId;
         view.pinnedItemLibName = item.libname ? item.libname : view.pinnedItemLibName;
-        view.listSize=resp.listSize;
+        view.listSize=resp.listSize ? resp.listSize : 0;
         view.allTracksItem=resp.allTracksItem;
         view.jumplist=resp.jumplist;
         view.filteredJumplist = [];
@@ -1551,7 +1551,7 @@ function browseItemAction(view, act, origItem, index, event, slimBrowseBaseActio
             logError(err, command);
         });
     } else if (act===REMOVE_FROM_FAV_ACTION || act==DELETE_FAV_FOLDER_ACTION) {
-        var id = SECTION_FAVORITES==view.current.section ? item.id : "url:"+(item.presetParams && item.presetParams.favorites_url ? item.presetParams.favorites_url : item.favUrl);
+        var id = SECTION_FAVORITES==(item.ihe ? item.section : view.current.section) ? originalId(item.id) : "url:"+(item.presetParams && item.presetParams.favorites_url ? item.presetParams.favorites_url : item.favUrl);
         if (undefined==id) {
             return;
         }
@@ -1564,7 +1564,7 @@ function browseItemAction(view, act, origItem, index, event, slimBrowseBaseActio
                 lmsCommand(view.playerId(), command).then(({data}) => {
                     logJsonMessage("RESP", data);
                     bus.$emit('refreshFavorites');
-                    if (SECTION_FAVORITES==view.current.section) {
+                    if (SECTION_FAVORITES==(item.ihe ? item.section : view.current.section)) {
                         view.refreshList();
                     }
                 }).catch(err => {
@@ -3349,30 +3349,19 @@ function browseHandleDrop(view, to, ev) {
     bus.$emit('dragActive', false);
     if (view.dragIndex!=undefined && to!=view.dragIndex) {
         var item = view.items[view.dragIndex];
-        if (view.isTop || (view.current && (view.current.section==SECTION_FAVORITES || (view.current.section==SECTION_PLAYLISTS && item.stdItem==STD_ITEM_PLAYLIST_TRACK)))) {
+        let section = item.ihe ? item.section : view.current ? view.current.section : undefined;
+        if (view.isTop || (undefined!=section && (section==SECTION_FAVORITES || (section==SECTION_PLAYLISTS && item.stdItem==STD_ITEM_PLAYLIST_TRACK)))) {
             var sel = Array.from(view.selection);
             view.clearSelection();
             if (sel.length>0) {
-                if (view.current.section!=SECTION_FAVORITES && sel.indexOf(to)<0) {
+                if (section!=SECTION_FAVORITES && sel.indexOf(to)<0) {
                     bus.$emit('movePlaylistItems', view.current.id, sel.sort(function(a, b) { return a<b ? -1 : 1; }), to);
                     if (lmsOptions.playlistImages && view.history.length>0) {
                         view.history[view.history.length-1].needsRefresh = true;
                     }
                 }
-            } else if (view.isTop) {
-                let drgIdx = view.dragIndex;
-                if (undefined!=view.items[0].ihe) {
-                    to-=view.topExtra.length;
-                    drgIdx-=view.topExtra.length;
-                }
-                if (to>=0 && drgIdx>=0) {
-                    view.top = arrayMove(view.top, drgIdx, to);
-                    view.items = view.grid.use && view.$store.state.detailedHomeItems.length>0 ? view.topExtra.concat(view.top) : view.top;
-                    view.saveTopList();
-                    view.layoutGrid(true);
-                }
-            } else if (view.current) {
-                if (view.current.section==SECTION_FAVORITES) {
+            } else if (undefined!=section && (section==SECTION_FAVORITES || section==SECTION_PLAYLISTS)) {
+                if (section==SECTION_FAVORITES) {
                     if (view.$store.state.sortFavorites && !view.items[to].isFavFolder) {
                         return;
                     }
@@ -3408,6 +3397,18 @@ function browseHandleDrop(view, to, ev) {
                             view.history[view.history.length-1].needsRefresh = true;
                         }
                     });
+                }
+            } else if (view.isTop) {
+                let drgIdx = view.dragIndex;
+                if (undefined!=view.items[0].ihe) {
+                    to-=view.topExtra.length;
+                    drgIdx-=view.topExtra.length;
+                }
+                if (to>=0 && drgIdx>=0) {
+                    view.top = arrayMove(view.top, drgIdx, to);
+                    view.items = view.grid.use && view.$store.state.detailedHomeItems.length>0 ? view.topExtra.concat(view.top) : view.top;
+                    view.saveTopList();
+                    view.layoutGrid(true);
                 }
             }
         }

@@ -1,6 +1,26 @@
-6.3.3
+6.4.1
+-----
+1. When creating 'Share' image allow track title to span up to 3 lines if only
+   showing 3 fields (e.g. title, artist, album).
+2. Only show context info in 'Share' if enabled for 'Now Playing'.
+3. Center text in 'Share' image if not showing context in 'Now Playing'.
+4. Try not to show 'AxiosError' when displaying errors.
+5. If SlimBrowse item_id is 'NaN.ID' then remove 'NaN.'
+
+6.4.0
 -----
 1. Fix blurred sub-toolbar background.
+2. Hide floating search button when mobile keyboard shown.
+3. Show release name on separate line in album style queue header - thanks to
+   mspertus.
+4. Add 'Share' to now-playing context menu, creates an image of current track
+   for sharing. Thanks to crystalgipsy for the original implementation.
+5. Don't ask for more when scroll music mixes.
+6. Fix edit actions from favourites in scrolled list.
+7. Fix semi-transparent check button on grid works covers.
+8. Fix 'Show image' for playlist images.
+9. If an error is received when trying to set rating, then reset display to
+   last value.
 
 6.3.2
 -----

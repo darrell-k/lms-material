@@ -10,6 +10,7 @@
 "'%1' failed":"'%1' fehlgeschlagen",
 "(+%1 others)":"(+%1 andere)",
 "(NOTE: These lists are only shown when using the grid view. If 'Explore' is not selected, then it will appear as a standard grid at the end. 'Categories' configures the standard items shown in 'Explore'.)":"Hinweis: diese Listen werden nur angezeigt, wenn die Rasteransicht verwendet wird. Falls 'Entdecken' nicht aktiv ist, so wird wird es als normales Raster am Ende angezeigt. 'Kategorien' definiert die Einträge, die im 'Entdecken' Bereich angezeigt werden.",
+"(Scroll for more)":"(Scrollen für mehr)",
 "+ %1 more":"+ %1 weitere",
 "...then album artist, album, disc no., track no.":"...dann Albuminterpret, Album, Disc-Nr., Titel-Nr.",
 "...then album artist, disc no., track no.":"...dann Albuminterpret, Disc-Nr., Titel-Nr.",
@@ -755,6 +756,13 @@
 "1 day":"1 Tag",
 "%1 days":"%1 Tage",
 "%1 %2":"",
-"(Scroll for more)":"(Scrollen für mehr)",
-"1 %1":""
+"1 %1":"",
+"Add to clipboard":"",
+"Clipboard":"",
+"Failed to set rating!":"",
+"Long-press on image and select 'Share image'.":"",
+"Long-press on image, select 'Copy image' (to add to clipboard), switch to another app, and then paste.":"",
+"Medium":"",
+"Right-click on image, select 'Copy image' (to add to clipboard), switch to another app, and then paste.":"",
+"Share":""
 }

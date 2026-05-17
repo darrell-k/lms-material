@@ -13,14 +13,13 @@ const TRACK_TAB = 2;
 const NP_PIC_ACT = 1;
 const NP_INFO_ACT = 2;
 const NP_BROWSE_CMD = 3;
-const NP_COPY_DETAILS_CMD = 4;
-const NP_SHOW_IN_TABS_ACT = 5;
-const NP_SYNC_ACT = 6;
-const NP_LYRICS_SCROLL_ACT = 7;
-const NP_LYRICS_HIGHLIGHT_ACT = 8;
-const NP_COPY_ACT = 9;
-const NP_SEARCH_ACT = 10;
-const NP_ZOOM_ACT = 11;
+const NP_SHARE_CMD = 4;
+const NP_COPY_DETAILS_CMD = 5;
+const NP_SHOW_IN_TABS_ACT = 6;
+const NP_SYNC_ACT = 7;
+const NP_LYRICS_SCROLL_ACT = 8;
+const NP_LYRICS_HIGHLIGHT_ACT = 9;
+const NP_ZOOM_ACT = 10;
 const NP_CUSTOM = 100;
 const NP_ITEM_ACT = 200;
 const NP_MIN_WIDTH_FOR_FULL = 780;
@@ -261,6 +260,7 @@ var lmsNowPlaying = Vue.component("lms-now-playing", {
        v-bind:class="undefined!=this.playerStatus.current.display_artist ? {'link-item':artistAndComposerLine} : ''"
        @click.stop="undefined!=display_artist ? clickArtist(playerStatusCurrent, undefined, $event) : ''"
        ></p>
+       <!-- <p class="np-text-landscape subtext" v-if="workLine" v-html="workLine"></p> -->
        <p class="np-text-landscape subtext" v-if="albumLine" v-html="albumLine"></p>
        <v-rating v-if="showRatings" class="np-text-landscape subtext" v-model="rating.value" :halfIncrements="maxRating>5" hover clearable @click.native="setRating(true)" :readonly="undefined==LMS_P_RP"></v-rating>
       </div>
@@ -337,6 +337,7 @@ var lmsNowPlaying = Vue.component("lms-now-playing", {
        v-bind:class="undefined!=this.playerStatus.current.display_artist ? {'link-item':artistAndComposerLine} : ''"
        @click.stop="undefined!=display_artist ? clickArtist(playerStatusCurrent, undefined, $event) : ''"
       ></p>
+      <!-- <p class="np-text subtext" v-if="workLine" v-html="workLine"></p> -->
       <p class="np-text subtext" v-if="albumLine" v-html="albumLine"></p>
       <v-rating v-if="showRatings" class="np-text subtext" v-model="rating.value" :halfIncrements="maxRating>5" hover clearable @click.native="setRating(true)" :readonly="undefined==LMS_P_RP"></v-rating>
      </div>
@@ -1154,6 +1155,14 @@ var lmsNowPlaying = Vue.component("lms-now-playing", {
                 logJsonMessage("RESP", data);
                 bus.$emit('refreshStatus');
                 bus.$emit('ratingChanged', this.rating.track_id, this.rating.album_id);
+            }).catch(err => {
+                bus.$emit('showError', undefined, i18n('Failed to set rating!'));
+                if (this.rating.track_id==this.playerStatus.current.id) {
+                    this.rating.value=this.rating.setting;
+                }
+                this.rating.track_id = undefined;
+                this.rating.album_id = undefined;
+                bus.$emit('refreshStatus');
             });
         },
         doCommand(command, msg) {
@@ -1584,6 +1593,9 @@ var lmsNowPlaying = Vue.component("lms-now-playing", {
         artistAndComposerLine() {
             return this.$store.state.nowPlayingContext && undefined!=this.playerStatus.current.artistAndComposerWithContext ? this.playerStatus.current.artistAndComposerWithContext : this.playerStatus.current.artistAndComposer
         },
+        //workLine() {
+        //    return this.$store.state.nowPlayingContext && undefined!=this.playerStatus.current.workWithContext ? this.playerStatus.current.workWithContext : this.playerStatus.current.work
+        //},
         albumLine() {
             return this.$store.state.nowPlayingContext && undefined!=this.playerStatus.current.artistAndComposerWithContext && !isEmpty(this.playerStatus.current.albumLine) ? i18n('<obj>from</obj> %1', this.playerStatus.current.albumLine).replaceAll("<obj>", "<obj class=\"ext-details\">") : this.playerStatus.current.albumLine
         },
