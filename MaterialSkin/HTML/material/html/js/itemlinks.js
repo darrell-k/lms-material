@@ -22,13 +22,17 @@ function show_artist(event, id, title, page) {
 function show_artist_list(event, artist_ids, artists, title, page) {
     if (undefined!=artist_ids) {
         event.stopPropagation();
+        if (artist_ids.length==1) {
+            show_artist(event, artist_ids[0], artists[0], page);
+            return;
+        }
         var choices = [];
         for (var i=0, len=artist_ids.length; i<len; ++i) {
-            choices.push({title:artists[i], id:artist_ids[i]});
+            choices.push({title:unescape(artists[i]), id:artist_ids[i]});
         }
         choose(ACTIONS[GOTO_ARTIST_ACTION].title, choices).then(choice => {
             if (undefined!=choice) {
-                show_artist(event, choice.id, choice.title, page);
+                show_artist(event, choice.id, escape(choice.title), page);
             }
         });
     }
