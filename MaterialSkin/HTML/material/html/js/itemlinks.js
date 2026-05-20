@@ -93,10 +93,32 @@ function buildLink(func, id, str, page, extra) {
 }
 
 function addArtistLink(item, line, type, func, page, used, plain) {
-    if (undefined!=item.display_artist) {
-        let val = item.display_artist;
-        let artist_ids = undefined!=item.artist_ids ? item.artist_ids : undefined!=item.albumartist_ids ? item.albumartist_ids : undefined;
-        let artists = undefined!=item.artists ? item.artists.join("','") : undefined!=item.albumartists ? item.albumartists.join("','") : undefined;
+    if (undefined!=item.display_artist || undefined!=item.display_artist_album && type=='albumartist') {
+        let val = type=='albumartist' && item.display_artist_album ? item.display_artist_album : item.display_artist;
+        let artist_ids = item[type+"_ids"];
+        if (undefined==artist_ids) {
+            artist_ids =
+                undefined!=item.trackartist_ids
+                    ? item.trackartist_ids
+                    : undefined!=item.artist_ids
+                        ? item.artist_ids
+                        : undefined!=item.albumartist_ids
+                            ? item.albumartist_ids
+                            : undefined;
+        }
+        let artists = item[type+"s"];
+        if (undefined!=artists) {
+            artists = artists.join("','");
+        } else {
+            artists =
+                undefined!=item.trackartists
+                    ? item.trackartists.join("','")
+                    : undefined!=item.artists
+                        ? item.artists.join("','")
+                        : undefined!=item.albumartists
+                            ? item.albumartists.join("','")
+                            : undefined;
+        }
         line=addPart(line, "<obj class=\"link-item\" onclick=\"show_artist_list(event, ["+artist_ids+"], ['"+artists+"'], \'"+escape(val)+"\', \'"+page+"\'"+")\">" + val + "</obj>");
     } else if (lmsOptions.showAllArtists && undefined!=item[type+"s"] && item[type+"s"].length>1) {
         let canUse = new Set();
@@ -124,7 +146,6 @@ function addArtistLink(item, line, type, func, page, used, plain) {
         }
     } else {
         let val = item[type];
-//        let val = item.display_artist ? item.display_artist : item[type];
         if (undefined!=val) {
             if (used.has(val)) {
                 return line;

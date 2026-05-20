@@ -1389,8 +1389,8 @@ var lmsNowPlaying = Vue.component("lms-now-playing", {
         },
         clickArtist(item, index, event) {
             storeClickOrTouchPos(event, this.menu);
-            let artists = undefined!=item.artists ? item.artists : undefined!=item.albumartists ? item.albumartists : undefined;
-            let artist_ids = undefined!=item.artist_ids ? item.artist_ids : undefined!=item.albumartist_ids ? item.albumartist_ids : undefined;
+            let artists = undefined!=item.trackartists ? item.trackartists : undefined!=item.artists ? item.artists : undefined!=item.albumartists ? item.albumartists : undefined;
+            let artist_ids = undefined!=item.trackartist_ids ? item.trackartist_ids : undefined!=item.artist_ids ? item.artist_ids : undefined!=item.albumartist_ids ? item.albumartist_ids : undefined;
             if (undefined!=artist_ids) {
                 var choices = [];
                 for (var i=0, len=artist_ids.length; i<len; ++i) {
