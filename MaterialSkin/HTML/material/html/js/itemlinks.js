@@ -304,9 +304,7 @@ function buildWorkLine(i, page, plain) {
 }
 
 function buildArtists(i, line, page, used, plain) {
-    if (i.display_artist) {
-        line=addArtistLink(i, line, "artist", "show_artist", page, used, plain);
-    } else if (lmsOptions.showAllArtists) {
+    if (lmsOptions.showAllArtists || i.display_artist || i.display_trackartist || i.display_albumartist) {
         if (i.artist) {
             line=addArtistLink(i, line, "artist", "show_artist", page, used, plain);
             used.add(i.artist);

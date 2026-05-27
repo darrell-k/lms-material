@@ -674,6 +674,7 @@ function nowplayingFetchTrackInfo(view) {
     let html="";
     let trk = view.playerStatus.current;
 
+// darrell - add display_artist etc somewhere here...
     trk.title = trackTitle(trk);
     if (undefined!=trk.artist) {
         let entry = nowplayingArtistEntry(trk, 'artist', 'ARTIST');
