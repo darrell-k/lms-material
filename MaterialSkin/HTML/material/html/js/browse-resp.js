@@ -1828,9 +1828,10 @@ function parseBrowseResp(data, parent, options, cacheKey) {
             if (resp.items.length>1) {
                 let showArtists = (new Set(artists)).size>1;
                 if (!showArtists && undefined!=albumArtist) {
+                    const artistListLink=/onclick="show_artist_list/;
                     for (let i=0, loop=resp.items, len=loop.length; i<len && !showArtists; ++i) {
                         if (!loop[i].header) {
-                            showArtists = stripLinkTags(artists[i])!=albumArtist;
+                            showArtists = artistListLink.test(artists[i]) || stripLinkTags(artists[i])!=albumArtist;
                         }
                     }
                 }

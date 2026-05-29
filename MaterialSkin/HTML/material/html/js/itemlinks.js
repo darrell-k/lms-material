@@ -307,15 +307,15 @@ function buildArtists(i, line, page, used, plain) {
     if (lmsOptions.showAllArtists || i.display_artist || i.display_trackartist || i.display_albumartist) {
         if (i.artist) {
             line=addArtistLink(i, line, "artist", "show_artist", page, used, plain);
-            used.add(i.artist);
+            used.add(i.display_artist ? i.display_artist : i.artist);
         }
         if (i.trackartist) {
             line=addArtistLink(i, line, "trackartist", "show_artist", page, used, plain);
-            used.add(i.trackartist);
+            used.add(i.display_trackartist ? i.display_trackartist : i.trackartist);
         }
         if (i.albumartist) {
             line=addArtistLink(i, line, "albumartist", "show_albumartist", page, used, plain);
-            used.add(i.albumartist);
+            used.add(i.display_albumartist ? i.display_albumartist : i.albumartist);
         }
     } else {
         if (i.artist) {
