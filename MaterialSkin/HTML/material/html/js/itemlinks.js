@@ -38,8 +38,6 @@ function show_artist_list(event, artist_ids, artists, title, page) {
     }
 }
 
-//function showAlbum(event, album, title, page, subtitle) {
-//    browseItem(event, ["tracks"], ["album_id:"+album, trackTags(true), SORT_KEY+"tracknum"], unescape(title), page, undefined==subtitle ? subtitle : unescape(subtitle));
 function showAlbum(event, album_id, artist_id, title, page, subtitle) {
     browseItem(event, ["tracks"], ["album_id:"+album_id, "artist_id:"+artist_id, trackTags(true), SORT_KEY+"tracknum"], unescape(title), page, undefined==subtitle ? subtitle : unescape(subtitle));
 }
@@ -247,14 +245,9 @@ function buildAlbumLine(i, page, plain, addSubtitle) {
             album+=" (" + i.year + ")";
         }
         if (i.album_id && (!IS_MOBILE || lmsOptions.touchLinks) && !plain) {
-//<<<<<<< HEAD
-//            let artist = i.display_artist ? i.display_artist : i.albumartist ? i.albumartist : i.artist;
-//            album="<obj class=\"link-item\" onclick=\"showAlbum(event, "+i.album_id+",\'"+escape(album)+"\',\'"+page+"\',\'"+escape(artist)+"\')\">" + album + "</obj>";
-//=======
             let artist = undefined!=i.display_artist ? i.display_artist : undefined!=i.albumartist ? i.albumartist : i.artist;
             let artist_id = undefined!=i.albumartist_id ? i.albumartist_id : i.artist_id;
             album="<obj class=\"link-item\" onclick=\"showAlbum(event, "+i.album_id+","+artist_id+",\'"+escape(album)+"\',\'"+page+"\',\'"+escape(artist)+"\')\">" + album + "</obj>";
-//>>>>>>> master
         }
         if (addSubtitle) {
             if (undefined!=i.grouping) {
