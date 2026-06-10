@@ -139,7 +139,6 @@ function parseBrowseResp(data, parent, options, cacheKey) {
             var maybeAllowGrid = command!="trackstat"; // && !isFavorites; // && command!="playhistory";
             var numImages = 0;
             var numTracks = 0;
-            var numHeaders = 0;
 
             // LMS 9.1 enhanced meta-data
             let parentType = LMS_VERSION>=90100 && undefined!=data.result.hasMetadata
@@ -265,7 +264,7 @@ function parseBrowseResp(data, parent, options, cacheKey) {
                     i.title=i.title.replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
                     if (i.type=="header") {
                         i.header = true;
-                        numHeaders++;
+                        resp.numHeaders++;
                     }
                 }
 
@@ -292,10 +291,12 @@ function parseBrowseResp(data, parent, options, cacheKey) {
                     i.image = resolveImage("music/0/cover" + LMS_LIST_IMAGE_SIZE);
                 }
 
-                if (i.image) {
-                    haveWithIcons = true;
-                } else {
-                    haveWithoutIcons = true;
+                if (i.type!="header") {
+                    if (i.image) {
+                        haveWithIcons = true;
+                    } else {
+                        haveWithoutIcons = true;
+                    }
                 }
                 i.menu=[];
 
@@ -902,7 +903,7 @@ function parseBrowseResp(data, parent, options, cacheKey) {
                 resp.items.sort(weightSort);
             }
             if (numImages>0 && numImages==resp.items.length) {
-                resp.subtitle=i18np("1 Image", "%1 Images", resp.items.length-numHeaders);
+                resp.subtitle=i18np("1 Image", "%1 Images", resp.items.length-resp.numHeaders);
                 resp.canUseGrid = resp.forceGrid = true;
             } else {
                 if (data.result.window && data.result.window.textarea && resp.items.length<LMS_MAX_NON_SCROLLER_ITEMS) {
@@ -918,7 +919,7 @@ function parseBrowseResp(data, parent, options, cacheKey) {
                 }
                 if (resp.isMusicMix) {
                     resp.items.shift();
-                    resp.subtitle=0==resp.items.length ? i18n("Empty") : i18np("1 Track", "%1 Tracks", resp.items.length-numHeaders);
+                    resp.subtitle=0==resp.items.length ? i18n("Empty") : i18np("1 Track", "%1 Tracks", resp.items.length-resp.numHeaders);
                     resp.listSize=resp.items.length;
                 } else {
                     if (resp.items.length>0 &&
@@ -998,7 +999,7 @@ function parseBrowseResp(data, parent, options, cacheKey) {
                     }
                     // TODO: If using paging/infinite-scroll and pervious chunk had headers then itemCount wil be wrong!
                     //       Likewise if this was all tracks/albums/artists this will also be broken.
-                    let itemCount = startIndex + (resp.items.length-((categories.size>1 ? categories.size : 0) + numHeaders));
+                    let itemCount = startIndex + (resp.items.length-((categories.size>1 ? categories.size : 0) + resp.numHeaders));
                     if (0==itemCount) {
                         resp.subtitle=i18n("Empty");
                     } else if (isAppsTop) {
@@ -1032,11 +1033,11 @@ function parseBrowseResp(data, parent, options, cacheKey) {
                     } else {
                         resp.subtitle=i18np("1 Item", "%1 Items", itemCount);
                     }
-                    // IF we receive -1 as count, then pretend its a really high number...
+                    // Id we receive -1 as count, then pretend its a really high number...
                     if (resp.listSize==-1) {
                         resp.listSize = LMS_BATCH_SIZE + 1000;
                     }
-                    if (0!=itemCount && (itemCount+numHeaders)<resp.listSize) {
+                    if (0!=itemCount && (itemCount+resp.numHeaders)<resp.listSize) {
                         resp.subtitle+='<obj style="opacity:0.7">&nbsp;' + i18n("(Scroll for more)")+"</obj>";
                     }
                 }
@@ -1477,8 +1478,17 @@ function parseBrowseResp(data, parent, options, cacheKey) {
             let compilationAlbumArtist = undefined;
             let extraSubs = [];
             let browseContext = getLocalStorageBool('browseContext', false);
-            let splitIntoGroupings = undefined==parent || undefined==parent.multi || MULTI_GROUP_ALBUM==parent.multi;
+            // Attempt grouping whenever the album isn't already in multi-disc mode. The per-track
+            // logic produces no groupings for albums without work/grouping tags, and the gates
+            // further down (groupings.size>0) suppress header output in that case. Excluding
+            // MULTI_DISC_ALBUM preserves disc-based headers and the disc-choice prompt for
+            // multi-disc single-work albums (e.g. a 3-CD St Matthew Passion) where disc grouping
+            // is the more useful structure.
+            let splitIntoGroupings = undefined==parent || MULTI_DISC_ALBUM!=parent.multi;
 
+            if (undefined!=data.result.album_header && undefined!=data.result.album_header.title_names && data.result.album_header.title_names.length>1) {
+                resp.listHeader = data.result.album_header;
+            }
             for (let idx=0, loop=data.result.titles_loop, loopLen=loop.length; idx<loopLen; ++idx) {
                 let i = makeHtmlSafe(loop[idx]);
                 if (undefined!=filterCompilation && (undefined==i.compilation ? 0 : parseInt(i.compilation))!=filterCompilation) {
@@ -1722,7 +1732,8 @@ function parseBrowseResp(data, parent, options, cacheKey) {
                               album: sortTracks || isSearchResult || 1==allTracksGrouping ? i.album : undefined,
                               artist: isSearchResult || 2==sortTracks || 3==allTracksGrouping ? getArtist(i) : undefined,
                               album_id: isSearchResult ? i.album_id : undefined,
-                              artist_id: isSearchResult ? i.artist_id : undefined,
+                              artist_id: i.artist_id,
+                              albumartist_id: i.albumartist_id,
                               url: i.url,
                               draggable: true,
                               duration: duration>0 ? duration : undefined,
@@ -1824,7 +1835,7 @@ function parseBrowseResp(data, parent, options, cacheKey) {
                                          ? parent.subtitle
                                          : undefined;
 
-            let willShowGroupHeaders = allTracksGrouping==0 && (groupings.size>1 || isWork) && splitIntoGroups;
+            let willShowGroupHeaders = allTracksGrouping==0 && groupings.size>0 && splitIntoGroups;
             if (resp.items.length>1) {
                 let showArtists = (new Set(artists)).size>1;
                 if (!showArtists && undefined!=albumArtist) {
@@ -1891,7 +1902,7 @@ function parseBrowseResp(data, parent, options, cacheKey) {
             let removeDiscNumbers = false;
             let removeGroupFilter = false;
             if (allTracksGrouping==0) {
-                if ( (groupings.size>1 || isWork) && splitIntoGroups ) {
+                if ( groupings.size>0 && splitIntoGroups ) {
                     let d = 0;
                     for (var idx=0, len=resp.items.length; idx<len; ++idx) {
                         resp.items[idx].filter = resp.items[idx].gfilter;
@@ -2493,7 +2504,7 @@ function parseBrowseResp(data, parent, options, cacheKey) {
                     new_data.result[parse_loop_name+"_loop"] = loop;
                     if (undefined!=obj) {
                         new_data.result['base']=obj['base'];
-                        new_data.result['count']=2500;
+                        new_data.result['count']=obj['count'];
                     }
                     let newResp = parseBrowseResp(new_data, parent, opts, undefined);
                     if (ismore) {
@@ -2520,7 +2531,7 @@ function parseBrowseResp(data, parent, options, cacheKey) {
                                 if (isFav) {
                                     header.morecmd = {command:lists[s].command, params:lists[s].params};
                                 } else {
-                                    header.morecmd = {command:["material-skin", "home-extra"], params:[lists[s].id.split('_').slice(1).join('_')+":1", "ismore:1", "count:200"]};
+                                    header.morecmd = {command:["material-skin", "home-extra"], params:[lists[s].id.split('_').slice(1).join('_')+":1", "ismore:1", "count:"+LMS_BATCH_SIZE]};
                                 }
                             }
 
