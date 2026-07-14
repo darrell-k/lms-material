@@ -10,7 +10,9 @@ function browseItem(event, cmd, params, title, page, subtitle) {
     if (lmsNumVisibleMenus>0 || ('queue'==page && lmsQueueSelectionActive)) { // lmsNumVisibleMenus defined in store.js
         return;
     }
-    event.stopPropagation();
+    if (undefined!=event) {
+        event.stopPropagation();
+    }
     bus.$emit("browse", cmd, params, unescape(title), page, page!="browse", subtitle);
     bus.$emit('linkClicked');
 }
@@ -21,7 +23,9 @@ function show_artist(event, id, title, page) {
 
 function show_artist_list(event, artist_ids, artists, title, page) {
     if (undefined!=artist_ids) {
-        event.stopPropagation();
+        if (undefined!=event) {
+            event.stopPropagation();
+        }
         if (artist_ids.length==1) {
             show_artist(event, artist_ids[0], artists[0], page);
             return;
@@ -39,7 +43,7 @@ function show_artist_list(event, artist_ids, artists, title, page) {
 }
 
 function showAlbum(event, album_id, artist_id, title, page, subtitle) {
-    browseItem(event, ["tracks"], ["album_id:"+album_id, "artist_id:"+artist_id, trackTags(true), SORT_KEY+"tracknum"], unescape(title), page, undefined==subtitle ? subtitle : unescape(subtitle));
+    browseItem(event, ["tracks"], ["album_id:"+album_id, "material_skin_artist_id:"+artist_id, trackTags(true), SORT_KEY+"tracknum"], unescape(title), page, undefined==subtitle ? subtitle : unescape(subtitle));
 }
 
 function showWork(event, workid, work, performance, composer, page) {
@@ -92,18 +96,34 @@ function buildLink(func, id, str, page, extra) {
            (undefined==extra ? "" : ","+extra)+")\">" + str + "</obj>";
 }
 
+function addDisplayArtistLink(item, line, type, page, plain) {
+    let val = item["display_"+type];
+    let artist_ids = item[type+"_ids"];
+    let artists = item[type+"s"];
+    if (undefined!=artists) {
+        artists = artists.join("','");
+    }
+    if ((!IS_MOBILE || lmsOptions.touchLinks)  && !plain && undefined!=artist_ids && undefined!=artists) {
+        line=addPart(line, "<obj class=\"link-item\" onclick=\"show_artist_list(event, ["+artist_ids+"], ['"+artists+"'], \'"+escape(val)+"\', \'"+page+"\'"+")\">" + val + "</obj>");
+    } else {
+        line=addPart(line, val);
+    }
+    return line;
+}
+
 function addArtistLink(item, line, type, func, page, used, plain) {
-    if (undefined!=item["display_"+type]) {
-        if (undefined==line) {
-            let val = item["display_"+type];
-            let artist_ids = item[type+"_ids"];
-            let artists = item[type+"s"];
-            if (undefined!=artists) {
-                artists = artists.join("','");
-            }
-            line=addPart(line, "<obj class=\"link-item\" onclick=\"show_artist_list(event, ["+artist_ids+"], ['"+artists+"'], \'"+escape(val)+"\', \'"+page+"\'"+")\">" + val + "</obj>");
-        }
-    } else if (lmsOptions.showAllArtists && undefined!=item[type+"s"] && item[type+"s"].length>1) {
+//    if (undefined!=item["display_"+type]) {
+//        if (undefined==line) {
+//            let val = item["display_"+type];
+//            let artist_ids = item[type+"_ids"];
+//            let artists = item[type+"s"];
+//            if (undefined!=artists) {
+//                artists = artists.join("','");
+//            }
+//            line=addPart(line, "<obj class=\"link-item\" onclick=\"show_artist_list(event, ["+artist_ids+"], ['"+artists+"'], \'"+escape(val)+"\', \'"+page+"\'"+")\">" + val + "</obj>");
+//        }
+//    } else 
+    if (lmsOptions.showAllArtists && undefined!=item[type+"s"] && item[type+"s"].length>1) {
         let canUse = new Set();
         let canUseVals = [];
         for (let i=0, loop=item[type+"s"], len=loop.length; i<len; ++i) {
@@ -305,27 +325,36 @@ function buildWorkLine(i, page, plain) {
 }
 
 function buildArtists(i, line, page, used, plain) {
-    if (lmsOptions.showAllArtists || i.display_artist || i.display_trackartist || i.display_albumartist) {
-        if (i.artist) {
-            line=addArtistLink(i, line, "artist", "show_artist", page, used, plain);
-            used.add(i.display_artist ? i.display_artist : i.artist);
-        }
-        if (i.trackartist) {
-            line=addArtistLink(i, line, "trackartist", "show_artist", page, used, plain);
-            used.add(i.display_trackartist ? i.display_trackartist : i.trackartist);
-        }
-        if (i.albumartist) {
-            line=addArtistLink(i, line, "albumartist", "show_albumartist", page, used, plain);
-            used.add(i.display_albumartist ? i.display_albumartist : i.albumartist);
-        }
-    } else {
-        if (i.artist) {
+    if (i.display_artist) {
+        line=addDisplayArtistLink(i, line, "artist", page, plain);
+    }
+    else if (i.display_trackartist) {
+        line=addDisplayArtistLink(i, line, "trackartist", page, plain);
+    }
+    else if (i.display_albumartist) {
+        line=addDisplayArtistLink(i, line, "albumartist", page, plain);
+    }
+    if (lmsOptions.showAllArtists) {
+        if (i.artist && undefined==i.display_artist) {
             line=addArtistLink(i, line, "artist", "show_artist", page, used, plain);
             used.add(i.artist);
-        } else if (i.trackartist) {
+        }
+        if (i.trackartist && undefined==i.display_trackartist) {
             line=addArtistLink(i, line, "trackartist", "show_artist", page, used, plain);
             used.add(i.trackartist);
-        } else if (i.albumartist) {
+        }
+        if (i.albumartist && undefined==i.display_albumartist) {
+            line=addArtistLink(i, line, "albumartist", "show_albumartist", page, used, plain);
+            used.add(i.albumartist);
+        }
+    } else {
+        if (i.artist && undefined==i.display_artist) {
+            line=addArtistLink(i, line, "artist", "show_artist", page, used, plain);
+            used.add(i.artist);
+        } else if (i.trackartist && undefined==i.display_trackartist) {
+            line=addArtistLink(i, line, "trackartist", "show_artist", page, used, plain);
+            used.add(i.trackartist);
+        } else if (i.albumartist && undefined==i.display_albumartist) {
             line=addArtistLink(i, line, "albumartist", "show_albumartist", page, used, plain);
             used.add(i.albumartist);
         }

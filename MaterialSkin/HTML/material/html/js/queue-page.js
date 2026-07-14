@@ -6,7 +6,7 @@
  */
 'use strict';
 
-const PQ_STATUS_TAGS = "tags:cdegilqtuy" + (LMS_VERSION>=90000 ? "bhz124" : "") + "AAGIKNPSxx";
+const PQ_STATUS_TAGS = "tags:cdegilqtuy" + (LMS_VERSION>=90000 ? "bhz1234" : "") + "AAGIKNPSxx";
 const PQ_REQUIRE_AT_LEAST_1_ITEM = new Set([PQ_SAVE_ACTION, PQ_MOVE_QUEUE_ACTION, PQ_SCROLL_ACTION, PQ_SORT_ACTION, REMOVE_DUPES_ACTION]);
 const PQ_REQUIRE_MULTIPLE_ITEMS = new Set([PQ_SCROLL_ACTION, SEARCH_LIST_ACTION, PQ_SORT_ACTION, REMOVE_DUPES_ACTION]);
 const pqGroupingMap = new Map();
@@ -50,11 +50,18 @@ function buildArtistAlbumLines(i, queueAlbumStyle, queueContext) {
     //let artistStr = i.albumartist ? i.albumartist : i.artist ? i.artist : i.trackartist; - moved into queueAlbumStyle block
     if (queueAlbumStyle) {
         let artistType = i.albumartist ? 'albumartist' : i.artist ? 'artist' : i.trackartist ? 'trackartist' : undefined;
+        let displayArtistType = i.display_albumartist ? 'albumartist' : i.display_artist ? 'artist' : i.display_trackartist ? 'trackartist' : undefined;
         if (!artistType && i.remote) {
             artistAlbum = i.remote_title ? i.remote_title : i.title;
             artistIsRemoteTitle = true;
-        } else if (artistType) {
-            artistAlbum = addArtistLink(i, undefined, artistType, artistType=='albumartist' ? 'show_albumartist' : 'show_artist', 'queue', new Set(), (IS_MOBILE && !lmsOptions.touchLinks));
+        } else {
+            if (displayArtistType) {
+                artistAlbum = addDisplayArtistLink(i, undefined, displayArtistType, 'queue', (IS_MOBILE && !lmsOptions.touchLinks));
+//                artistAlbum = addDisplayArtistLink(i, undefined, displayArtistType, displayArtistType=='albumartist' ? 'show_albumartist' : 'show_artist', 'queue', new Set(), (IS_MOBILE && !lmsOptions.touchLinks));
+            }
+            else if (artistType) {
+                artistAlbum = addArtistLink(i, artistAlbum, artistType, artistType=='albumartist' ? 'show_albumartist' : 'show_artist', 'queue', new Set(), (IS_MOBILE && !lmsOptions.touchLinks));
+            }
         }
     } else {
         let useComposerTag = i.composer && lmsOptions.showComposer && useComposer(i);

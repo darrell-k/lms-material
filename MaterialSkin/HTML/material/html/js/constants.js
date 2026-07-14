@@ -19,10 +19,11 @@ const SEPARATOR = " \u2022 ";
 const SEPARATOR_HTML = "&nbsp;\u2022 ";
 const SECTION_JUMP = "\u2b24";
 
-const IS_MOBILE  = (undefined!=navigator && undefined!=navigator.userAgentData && navigator.userAgentData.mobile) ||
-                   checkPlatform('Android|webOS|iPhone|iPad|BlackBerry|Windows Phone|Opera Mini|IEMobile|Mobile') ||
-                   ((typeof window.orientation !== "undefined") && 'ontouchstart' in window) ||
-                   (navigator.maxTouchPoints > 1 && checkPlatform('MacIntel'));
+const IS_MOBILE  = true;
+//const IS_MOBILE  = (undefined!=navigator && undefined!=navigator.userAgentData && navigator.userAgentData.mobile) ||
+//                   checkPlatform('Android|webOS|iPhone|iPad|BlackBerry|Windows Phone|Opera Mini|IEMobile|Mobile') ||
+//                   ((typeof window.orientation !== "undefined") && 'ontouchstart' in window) ||
+//                   (navigator.maxTouchPoints > 1 && checkPlatform('MacIntel'));
 const IS_ANDROID = checkPlatform('Android');
 const IS_IOS     = !IS_ANDROID && !window.MSStream && (checkPlatform('iPhone|iPad') || (checkPlatform('MacIntel') && navigator.maxTouchPoints > 1));
 const IS_IPHONE  = !IS_ANDROID && !window.MSStream && checkPlatform('iPhone');
@@ -151,10 +152,10 @@ const YEARS_ID = MUSIC_ID_PREFIX+"years";
 const RANDOM_MIX_ID = MUSIC_ID_PREFIX+"randomMix";
 const START_RANDOM_MIX_ID = MUSIC_ID_PREFIX+"randomMixStart";
 const ARTIST_TAGS = "tags:4s";
-const ALBUM_TAGS = "tags:ajlqswyKS24";
-const ALBUM_TAGS_ALL_ARTISTS = "tags:aajlqswyKSS24";
-const ARTIST_ALBUM_TAGS = "tags:aajlqswyKRSSW24";
-const BASE_TRACK_TAGS = "tags:dist" + (LMS_VERSION>=90000 ? "bhz1" : "");
+const ALBUM_TAGS = "tags:ajlqswyKS234";
+const ALBUM_TAGS_ALL_ARTISTS = "tags:aajlqswyKSS234";
+const ARTIST_ALBUM_TAGS = "tags:aajlqswyKRSSW234";
+const BASE_TRACK_TAGS = "tags:dist" + (LMS_VERSION>=90000 ? "bhz13" : "");
 const TRACK_TAGS = BASE_TRACK_TAGS+"kyuAACGPS";
 const SEARCH_TRACK_TAGS = BASE_TRACK_TAGS+(IS_MOBILE || LMS_VERSION<80400 ? "kuAC" : "kuAACS");
 const TECH_INFO_TAGS = "orITY";

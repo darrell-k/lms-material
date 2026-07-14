@@ -2164,7 +2164,7 @@ sub _handleHomeExtraCmd {
         foreach my $srt ( @albumsorts ) {
             my $isRandom = $srt eq "random" ? 1 : 0;
             my $reqCount = $isRandom ? 300 : $count;
-            my @cmd = ("albums", $index, $reqCount, "tags:aajlqswyKSS24WE", "sort:${srt}");
+            my @cmd = ("albums", $index, $reqCount, "tags:aajlqswyKSS234WE", "sort:${srt}");
             if ($libId) {
                 push(@cmd, "library_id:${libId}");
             }

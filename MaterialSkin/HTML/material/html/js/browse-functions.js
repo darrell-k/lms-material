@@ -820,9 +820,13 @@ function browseHandleListResponse(view, item, command, resp, prevPage, appendIte
         // Issue #1231 Clicking on album link in queue, or now-playing, will browse tracks - but only show
         // current artist. LMS9.2 /might/ send an album_header with titles_loop - if so use that.
         if (undefined!=resp.listHeader && undefined!=view.current && view.current.stdItem==STD_ITEM_ALBUM) {
-            view.current.subtitle = resp.listHeader.title_names.join(SEPARATOR)
+            view.current.subtitle = resp.listHeader.display_artist ? resp.listHeader.display_artist+SEPARATOR : "";
+            view.current.subtitle = view.current.subtitle+resp.listHeader.title_names.join(SEPARATOR);
             view.current.artists = resp.listHeader.title_names;
             view.current.artist_ids = resp.listHeader.title_ids;
+            view.current.display_artist = resp.listHeader.display_artist;
+            view.current.display_artist_artists = resp.listHeader.display_artist_artists;
+            view.current.display_artist_artist_ids = resp.listHeader.display_artist_artist_ids;
         }
         view.$nextTick(function () {
             view.setBgndCover();
@@ -1750,18 +1754,27 @@ function browseItemAction(view, act, origItem, index, event, slimBrowseBaseActio
             }
         }
     } else if (act==GOTO_ARTIST_ACTION) {
-        if (undefined!=item.artist_ids && item.artist_ids.length>1) {
+        let choiceCount = item.artist_ids ? item.artist_ids.length : 0;
+        choiceCount = item.display_artist ? choiceCount+1 : choiceCount;
+        if (choiceCount>1) {
             var choices = [];
+            if (undefined!=item.display_artist) {
+                choices.push({title:item.display_artist, daNames:item.display_artist_artists, id:item.display_artist_artist_ids});
+            }
             for (var i=0, len=item.artist_ids.length; i<len; ++i) {
                 choices.push({title:item.artists[i], id:item.artist_ids[i]});
             }
             choose(ACTIONS[GOTO_ARTIST_ACTION].title, choices).then(choice => {
                 if (undefined!=choice) {
-                    view.fetchItems(browseReplaceCommandTerms(view, {command:["albums"], params:["artist_id:"+choice.id, ARTIST_ALBUM_TAGS, SORT_KEY+ARTIST_ALBUM_SORT_PLACEHOLDER]}), {cancache:false, id:"artist_id:"+choice.id, title:choice.title, stdItem:STD_ITEM_ARTIST});
+                    if (undefined!=choice.daNames) {
+                        show_artist_list(undefined, choice.id, choice.daNames, choice.title, 'browse');
+                    } else {
+                        view.fetchItems(browseReplaceCommandTerms(view, {command:["albums"], params:["artist_id:"+choice.id, ARTIST_ALBUM_TAGS, SORT_KEY+ARTIST_ALBUM_SORT_PLACEHOLDER]}), {cancache:false, id:"artist_id:"+choice.id, title:choice.title, stdItem:STD_ITEM_ARTIST});
+                    }
                 }
             });
         } else {
-            let artist_id = item.artist_id;
+            let artist_id = item.artist_id ? item.artist_id : item.display_artist_artist_ids ? item.display_artist_artist_ids[0] : undefined;
             // artist_id may be undefined if current track list is created from cliking on album entry in queue
             // or now-playing. If so, then get artist_id from command.
             if (undefined==artist_id && view.command.params.length>0) {

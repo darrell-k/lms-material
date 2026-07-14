@@ -1211,19 +1211,28 @@ function parseBrowseResp(data, parent, options, cacheKey) {
                 }
 
                 if (undefined==artist) {
-                    artist = i.artist;
-                    if (undefined!=i.artist) {
-                        artists = [i.artist];
-                    }
-                    if (undefined!=i.artist_id) {
-                        artist_ids = [i.artist_id];
+                    artist = i.display_artist ? i.display_artist : i.artist;
+                    if (undefined==i.display_artist) {
+                        if (undefined!=i.artist) {
+                            artists = [i.artist];
+                        }
+                        if (undefined!=i.artist_id) {
+                            artist_ids = [i.artist_id];
+                        }
                     }
                 }
 
-                if ((!IS_MOBILE || lmsOptions.touchLinks) && undefined!=artist_ids && undefined!=artists && artists.length==artist_ids.length) {
+                if ((!IS_MOBILE || lmsOptions.touchLinks)) {
                     let entries = [];
-                    for (let a=0, al=artists.length; a<al; ++a) {
-                        entries.push("<obj class=\"link-item\" onclick=\"show_artist(event, "+artist_ids[a]+",\'"+escape(artists[a])+"\', \'browse\')\">" + artists[a] + "</obj>");
+                    if (undefined!=i.display_artist && undefined!=i.display_artist_artist_ids && undefined!=i.display_artist_artists) {
+                        let displayArtistsArray = splitStringArray(i.display_artist_artists, false).map(element => escape(element));
+                        let displayArtists = "'"+displayArtistsArray.join("','")+"'";
+                        entries.push("<obj class=\"link-item\" onclick=\"show_artist_list(event, ["+i.display_artist_artist_ids+"], ["+displayArtists+"], \'"+escape(i.display_artist)+"\', \'browse\')\">" + i.display_artist + "</obj>");
+                    }
+                    if (undefined!=artist_ids && undefined!=artists && artists.length==artist_ids.length) {
+                        for (let a=0, al=artists.length; a<al; ++a) {
+                            entries.push("<obj class=\"link-item\" onclick=\"show_artist(event, "+artist_ids[a]+",\'"+escape(artists[a])+"\', \'browse\')\">" + artists[a] + "</obj>");
+                        }
                     }
                     subtitleLinks = entries.join(", ");
                 }
@@ -1249,7 +1258,7 @@ function parseBrowseResp(data, parent, options, cacheKey) {
                 let performance = undefined!=i.performance && i.performance.length>0 ? i.performance : undefined;
                 let subtitle = showArtist ? artist : showYear && lmsOptions.yearInSub ? ""+i.year : undefined;
                 if (showArtist && undefined!=i.display_artist) {
-                    subtitle = i.display_artist;
+                    subtitle = i.display_artist+", "+subtitle;
                 }
                 let maintitle = showArtist || !lmsOptions.yearInSub ? title : i.album;
 
@@ -1273,6 +1282,8 @@ function parseBrowseResp(data, parent, options, cacheKey) {
                               artist_ids: splitIntArray(i.artist_ids),
                               artists: artists,
                               display_artist: i.display_artist,
+                              display_artist_artists: splitStringArray(i.display_artist_artists, false),
+                              display_artist_artist_ids: splitIntArray(i.display_artist_artist_ids),
                               work_id: i.work_id,
                               performance: performance,
                               title: maintitle,
@@ -1486,7 +1497,7 @@ function parseBrowseResp(data, parent, options, cacheKey) {
             // is the more useful structure.
             let splitIntoGroupings = undefined==parent || MULTI_DISC_ALBUM!=parent.multi;
 
-            if (undefined!=data.result.album_header && undefined!=data.result.album_header.title_names && data.result.album_header.title_names.length>1) {
+            if (undefined!=data.result.album_header && undefined!=data.result.album_header.title_names) { // && data.result.album_header.title_names.length>1) {
                 resp.listHeader = data.result.album_header;
             }
             for (let idx=0, loop=data.result.titles_loop, loopLen=loop.length; idx<loopLen; ++idx) {
