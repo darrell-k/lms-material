@@ -492,13 +492,13 @@ function browseHandleListResponse(view, item, command, resp, prevPage, appendIte
                 actParams[currentId[0]]=currentId[1];
             }
             if (undefined!=artist_id && artist_id.indexOf(".")<0) {
-                actParams["artist_id"] = artist_id;
+                actParams["artist_id"] = originalId(artist_id);
             }
             if (undefined!=work_id && work_id.indexOf(".")<0) {
-                actParams["work_id"] = work_id;
+                actParams["work_id"] = originalId(work_id);
             }
             if (undefined!=album_id && album_id.indexOf(".")<0) {
-                actParams["album_id"] = album_id;
+                actParams["album_id"] = originalId(album_id);
             }
             if (listingArtistAlbums) {
                 actParams['artist']=title;
@@ -525,7 +525,7 @@ function browseHandleListResponse(view, item, command, resp, prevPage, appendIte
                 actParams['count']=resp.items.length;
                 var field = getField(view.command, "composer_id:");
                 if (field>=0) {
-                    actParams['composer_id']=view.command.params[field];
+                    actParams['composer_id']=originalId(view.command.params[field]);
                 }
                 field = getField(view.command, "performance:");
                 if (field>=0) {
@@ -1724,7 +1724,7 @@ function browseItemAction(view, act, origItem, index, event, slimBrowseBaseActio
             if (view.allTracksItem) {
                 view.itemAction(ADD_ALL_ACTION==act ? ADD_ACTION : INSERT_ALL_ACTION==act ? INSERT_ACTION : PLAY_SHUFFLE_ALL_ACTION==act ? PLAY_SHUFFLE_ACTION : PLAY_ACTION, view.allTracksItem);
             } else {
-                view.doList(view.items, act);
+                browseDoList(view, view.items, act);
                 bus.$emit('showMessage', i18n("Adding tracks..."));
             }
         } else { // Need to filter items...
@@ -1749,7 +1749,7 @@ function browseItemAction(view, act, origItem, index, event, slimBrowseBaseActio
             }
 
             if (itemList.length>0) {
-                view.doList(itemList, act, itemIndex);
+                browseDoList(view, itemList, act, itemIndex);
                 bus.$emit('showMessage', isFilter || item.id.endsWith("tracks") ? i18n("Adding tracks...") : i18n("Adding albums..."));
             }
         }
@@ -1978,11 +1978,15 @@ function browseItemAction(view, act, origItem, index, event, slimBrowseBaseActio
                                 tracks = loop[i].allItems;
                                 break;
                             } else if (!loop[i].header && (undefined==choice.id || loop[i].filter==choice.id)) {
-                                tracks.push(loop[i]);
+                                if (INSERT_ACTION==act) {
+                                    tracks.unshift(loop[i]);
+                                } else {
+                                    tracks.push(loop[i]);
+                                }
                             }
                         }
                         if (tracks.length>0) {
-                            view.doList(tracks, act);
+                            browseDoList(view, tracks, act);
                             bus.$emit('showMessage', i18n("Adding tracks..."));
                         }
                     }

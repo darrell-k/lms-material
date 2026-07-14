@@ -86,6 +86,7 @@ function parseBrowseResp(data, parent, options, cacheKey) {
     try {
     if (data && data.result) {
         logJsonMessage("RESP", data);
+        var origCount = data.result.count;
         resp.listSize = data.result.count;
 
         var command = data && data.params && data.params.length>1 && data.params[1] && data.params[1].length>1 ? data.params[1][0] : undefined;
@@ -211,12 +212,20 @@ function parseBrowseResp(data, parent, options, cacheKey) {
                         resp.items.push(i);
                     } else {
                         data.result.count--;
+                        // Sven's Qobuz seems to send an empty last item. But if we reduce the count for that then
+                        // 'Scroll for more' is not shown. So, only adjust listSize if this empty entry is not the
+                        // last, or its showBigArtwork...
+                        if (idx!=loopLen-1 || i.showBigArtwork==1) {
+                            resp.listSize--;
+                        }
                     }
                     continue;
                 }
 
                 // If combining apps and radio, then *only* want TuneIn items in radios list
                 if (isRadiosTop && lmsOptions.combineAppsAndRadio && i["icon-id"] && !i["icon-id"].startsWith("/plugins/TuneIn")) {
+                    data.result.count--;
+                    resp.listSize--;
                     continue;
                 }
 
@@ -226,6 +235,7 @@ function parseBrowseResp(data, parent, options, cacheKey) {
                     if (playAction && loopLen>1) { // Save as special entry, so browse page can use for add/play all buttons
                         resp.allTracksItem = i;
                     }
+                    resp.listSize--;
                     continue;
                 }
                 var addedPlayAction = false;
@@ -249,6 +259,7 @@ function parseBrowseResp(data, parent, options, cacheKey) {
                           (idx<10 && idx>0 && idx<loopLen-1 && loop[idx-1].style && loop[idx+1].style && loop[idx-1].style=='item_add' && loop[idx+1].style=='itemplay' &&
                             i.actions && i.actions.go && i.actions.go.params && i.actions.go.params.cmd && i.actions.go.params.cmd=='insert')) {
                         data.result.count--;
+                        resp.listSize--;
                         continue;
                     }
                     i.title = replaceNewLines(i.text);
@@ -265,6 +276,10 @@ function parseBrowseResp(data, parent, options, cacheKey) {
                     if (i.type=="header") {
                         i.header = true;
                         resp.numHeaders++;
+                    } else if (i.type=="header-basic") {
+                        i.header = true;
+                        resp.numHeaders++;
+                        i.actions = undefined;
                     }
                 }
 
@@ -291,7 +306,7 @@ function parseBrowseResp(data, parent, options, cacheKey) {
                     i.image = resolveImage("music/0/cover" + LMS_LIST_IMAGE_SIZE);
                 }
 
-                if (i.type!="header") {
+                if (!i.header) {
                     if (i.image) {
                         haveWithIcons = true;
                     } else {
@@ -479,6 +494,8 @@ function parseBrowseResp(data, parent, options, cacheKey) {
                     i.id = "apps."+i.actions.go.params.menu;
 
                     if (queryParams.party && HIDE_APPS_FOR_PARTY.has(i.id)) {
+                        data.result.count--;
+                        resp.listSize--;
                         continue;
                     }
                     if (allowPinning && !i.header) {
@@ -525,6 +542,8 @@ function parseBrowseResp(data, parent, options, cacheKey) {
                     }
                 } else if (isBmf) {
                     if (i.style=="itemNoAction") {
+                        data.result.count--;
+                        resp.listSize--;
                         continue;
                     }
                     i.bmf = true;
@@ -539,6 +558,8 @@ function parseBrowseResp(data, parent, options, cacheKey) {
                                 : "crop_portrait";
                 } else if (isDisksAndFolders) {
                     if (i.style=="itemNoAction") {
+                        data.result.count--;
+                        resp.listSize--;
                         continue;
                     }
                     if (!i.icon) {
@@ -662,6 +683,43 @@ function parseBrowseResp(data, parent, options, cacheKey) {
                     addedDivider = addDivider(i, addedDivider);
                     i.menu.push(COPY_DETAILS_ACTION);
                     i.menu.push(SHOW_IMAGE_ACTION);
+                }
+
+                // Surface custom actions on app/online (streaming) browse items. These arrive
+                // via item_loop (library content uses the *_loop branches) and bypass the
+                // STD_ITEMS action-menu path (online stdItems are >= STD_ITEM_ONLINE_ARTIST, so
+                // item.stdItem<STD_ITEMS.length is false), so add the CUSTOM_ACTIONS marker to
+                // the item's own menu and populate the view-level itemCustomActions. Service
+                // album rows (e.g. Qobuz New Releases) carry no favorites_url/metadata - only a
+                // playable item_id + title/subtitle - so key off playability and expose
+                // title/subtitle via item.album/item.artist so $ALBUMNAME/$ARTISTNAME resolve;
+                // $SERVICE carries the browsing service ('command').
+                let isOnlineAlbum  = STD_ITEM_ONLINE_ALBUM==i.stdItem;
+                let isOnlineArtist = STD_ITEM_ONLINE_ARTIST==i.stdItem;
+                let isAppItem = !isOnlineAlbum && !isOnlineArtist && !isOnlineTrack &&
+                                addedPlayAction && undefined==i.stdItem && !isFavorites && !isAppsTop;
+                if (isOnlineAlbum || isOnlineArtist || isOnlineTrack || isAppItem) {
+                    let btype    = isOnlineArtist ? "artist" : isOnlineTrack ? "track" : "album";
+                    let ocFilter = i.presetParams ? i.presetParams.favorites_url : undefined;
+                    // A plugin/app can define a custom-action category for its OWN view, named
+                    // "<command>-<type>" (e.g. "listentolater-album"). If defined - even as an
+                    // empty list - it takes precedence over the generic "online-*" category, so
+                    // a plugin's own list can show different actions, or none (an empty category
+                    // suppresses the generic actions on that app's items).
+                    let appCat = (undefined!=command) ? command+"-"+btype : undefined;
+                    let oca = (undefined!=appCat && undefined!=customActions && (appCat in customActions))
+                              ? getCustomActions(appCat, false, ocFilter)
+                              : getCustomActions("online-"+btype, false, ocFilter);
+                    if (undefined!=oca && oca.length>0) {
+                        if (isAppItem) {
+                            if (undefined==i.album)  { i.album   = i.title; }
+                            if (undefined==i.artist) { i.artist  = i.subtitle; }
+                            i.service = command;
+                        }
+                        addedDivider = addDivider(i, addedDivider);
+                        i.menu.push(CUSTOM_ACTIONS);
+                        if (undefined==resp.itemCustomActions) { resp.itemCustomActions = oca; }
+                    }
                 }
 
                 // Only show 'More' action if:
@@ -799,7 +857,7 @@ function parseBrowseResp(data, parent, options, cacheKey) {
                             item.image = defAlbumCover;
                         } else if (item.type=="artist") {
                             item.image = defArtistImage;
-                        } else {
+                        } else if (!item.header) {
                             // Found an item without and image and not marked as an artist or album, no
                             // default image set - so disable grid usage.
                             // See: https://forums.lyrion.org/showthread.php?109624-Announce-Material-Skin&p=944597&viewfull=1#post944597
@@ -1033,8 +1091,8 @@ function parseBrowseResp(data, parent, options, cacheKey) {
                     } else {
                         resp.subtitle=i18np("1 Item", "%1 Items", itemCount);
                     }
-                    // Id we receive -1 as count, then pretend its a really high number...
-                    if (resp.listSize==-1) {
+                    // If we receive -1 as count, then pretend its a really high number...
+                    if (origCount==-1) {
                         resp.listSize = LMS_BATCH_SIZE + 1000;
                     }
                     if (0!=itemCount && (itemCount+resp.numHeaders)<resp.listSize) {
@@ -2516,6 +2574,7 @@ function parseBrowseResp(data, parent, options, cacheKey) {
                     if (undefined!=obj) {
                         new_data.result['base']=obj['base'];
                         new_data.result['count']=obj['count'];
+                        new_data.result['offset']=obj['offset'];
                     }
                     let newResp = parseBrowseResp(new_data, parent, opts, undefined);
                     if (ismore) {

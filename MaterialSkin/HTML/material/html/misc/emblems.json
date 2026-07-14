@@ -4,6 +4,11 @@
     "bgnd":"#1dd35e",
     "color":"#fff"
   },
+  "spoton":{
+    "name":"spotify",
+    "bgnd":"#1dd35e",
+    "color":"#fff"
+  },
   "qobuz":{
     "name":"qobuz",
     "bgnd":"#fff",
@@ -46,6 +51,11 @@
   },
   "youtube":{
     "name":"youtube",
+    "bgnd":"#e61d23",
+    "color":"#fff"
+  },
+  "ytm":{
+    "name":"youtube-music",
     "bgnd":"#e61d23",
     "color":"#fff"
   },

@@ -19,6 +19,15 @@
         "context":true,
         "extid":"spotify"
     },
+    "spoton:":{
+        "name":"Spotify",
+        "url":{
+            "from":"spoton://track:",
+            "to":"https://open.spotify.com/track/"
+        },
+        "context":true,
+        "extid":"spoton"
+    },
     "wimp:":{
         "name":"Tidal",
         "url":{
@@ -67,6 +76,14 @@
             "to":"https://www"
         },
         "extid":"youtube"
+    },
+    "ytm:":{
+        "name":"YouTube",
+        "url":{
+            "from":"ytm://",
+            "to":"https://music.youtube.com/watch?v="
+        },
+        "extid":"ytm"
     },
     "pandora:":{
         "name":"Pandora",
