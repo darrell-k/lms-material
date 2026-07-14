@@ -19,11 +19,11 @@ const SEPARATOR = " \u2022 ";
 const SEPARATOR_HTML = "&nbsp;\u2022 ";
 const SECTION_JUMP = "\u2b24";
 
-const IS_MOBILE  = true;
-//const IS_MOBILE  = (undefined!=navigator && undefined!=navigator.userAgentData && navigator.userAgentData.mobile) ||
-//                   checkPlatform('Android|webOS|iPhone|iPad|BlackBerry|Windows Phone|Opera Mini|IEMobile|Mobile') ||
-//                   ((typeof window.orientation !== "undefined") && 'ontouchstart' in window) ||
-//                   (navigator.maxTouchPoints > 1 && checkPlatform('MacIntel'));
+//const IS_MOBILE  = true;
+const IS_MOBILE  = (undefined!=navigator && undefined!=navigator.userAgentData && navigator.userAgentData.mobile) ||
+                   checkPlatform('Android|webOS|iPhone|iPad|BlackBerry|Windows Phone|Opera Mini|IEMobile|Mobile') ||
+                   ((typeof window.orientation !== "undefined") && 'ontouchstart' in window) ||
+                   (navigator.maxTouchPoints > 1 && checkPlatform('MacIntel'));
 const IS_ANDROID = checkPlatform('Android');
 const IS_IOS     = !IS_ANDROID && !window.MSStream && (checkPlatform('iPhone|iPad') || (checkPlatform('MacIntel') && navigator.maxTouchPoints > 1));
 const IS_IPHONE  = !IS_ANDROID && !window.MSStream && checkPlatform('iPhone');
