@@ -1316,7 +1316,7 @@ function parseBrowseResp(data, parent, options, cacheKey) {
                 let performance = undefined!=i.performance && i.performance.length>0 ? i.performance : undefined;
                 let subtitle = showArtist ? artist : showYear && lmsOptions.yearInSub ? ""+i.year : undefined;
                 if (showArtist && undefined!=i.display_artist) {
-                    subtitle = i.display_artist+", "+subtitle;
+                    subtitle = i.artist_ids ? i.display_artist+", "+subtitle : i.display_artist;
                 }
                 let maintitle = showArtist || !lmsOptions.yearInSub ? title : i.album;
 

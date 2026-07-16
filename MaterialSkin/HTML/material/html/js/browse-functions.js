@@ -1754,15 +1754,17 @@ function browseItemAction(view, act, origItem, index, event, slimBrowseBaseActio
             }
         }
     } else if (act==GOTO_ARTIST_ACTION) {
-        let choiceCount = item.artist_ids ? item.artist_ids.length : 0;
-        choiceCount = item.display_artist ? choiceCount+1 : choiceCount;
-        if (choiceCount>1) {
-            var choices = [];
+        let artistCount = item.artist_ids ? item.artist_ids.length : 0;
+        let daCount = item.display_artist_artist_ids ? item.display_artist_artist_ids.length : 0;
+        var choices = [];
+        if (daCount>1 || daCount==1 && artistCount>0 || artistCount>1) {
             if (undefined!=item.display_artist) {
                 choices.push({title:item.display_artist, daNames:item.display_artist_artists, id:item.display_artist_artist_ids});
             }
-            for (var i=0, len=item.artist_ids.length; i<len; ++i) {
-                choices.push({title:item.artists[i], id:item.artist_ids[i]});
+            if (undefined!=item.artist_ids) {
+                for (var i=0, len=item.artist_ids.length; i<len; ++i) {
+                    choices.push({title:item.artists[i], id:item.artist_ids[i]});
+                }
             }
             choose(ACTIONS[GOTO_ARTIST_ACTION].title, choices).then(choice => {
                 if (undefined!=choice) {
