@@ -1555,7 +1555,7 @@ function parseBrowseResp(data, parent, options, cacheKey) {
             // is the more useful structure.
             let splitIntoGroupings = undefined==parent || MULTI_DISC_ALBUM!=parent.multi;
 
-            if (undefined!=data.result.album_header && undefined!=data.result.album_header.title_names) { // && data.result.album_header.title_names.length>1) {
+            if (undefined!=data.result.album_header && (undefined!=data.result.album_header.title_names || undefined!=data.result.album_header.display_artist)) { // && data.result.album_header.title_names.length>1) {
                 resp.listHeader = data.result.album_header;
             }
             for (let idx=0, loop=data.result.titles_loop, loopLen=loop.length; idx<loopLen; ++idx) {
