@@ -55,12 +55,17 @@ function buildArtistAlbumLines(i, queueAlbumStyle, queueContext) {
             artistAlbum = i.remote_title ? i.remote_title : i.title;
             artistIsRemoteTitle = true;
         } else {
-            if (displayArtistType) {
+            if (displayArtistType=="albumartist" || displayArtistType=="artist") {
                 artistAlbum = addDisplayArtistLink(i, undefined, displayArtistType, 'queue', (IS_MOBILE && !lmsOptions.touchLinks));
-//                artistAlbum = addDisplayArtistLink(i, undefined, displayArtistType, displayArtistType=='albumartist' ? 'show_albumartist' : 'show_artist', 'queue', new Set(), (IS_MOBILE && !lmsOptions.touchLinks));
+            }
+            else if (artistType=="albumartist" || artistType=="artist") {
+                artistAlbum = addArtistLink(i, artistAlbum, artistType, artistType=='albumartist' ? 'show_albumartist' : 'show_artist', 'queue', new Set(), (IS_MOBILE && !lmsOptions.touchLinks));
+            }
+            else if (displayArtistType) {
+                artistAlbum = addDisplayArtistLink(i, undefined, displayArtistType, 'queue', (IS_MOBILE && !lmsOptions.touchLinks));
             }
             else if (artistType) {
-                artistAlbum = addArtistLink(i, artistAlbum, artistType, artistType=='albumartist' ? 'show_albumartist' : 'show_artist', 'queue', new Set(), (IS_MOBILE && !lmsOptions.touchLinks));
+                artistAlbum = addArtistLink(i, artistAlbum, artistType, 'show_artist', 'queue', new Set(), (IS_MOBILE && !lmsOptions.touchLinks));
             }
         }
     } else {
